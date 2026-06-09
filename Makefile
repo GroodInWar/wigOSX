@@ -18,7 +18,8 @@ LDFLAGS = -T linker.ld -ffreestanding -O2 -nostdlib
 OBJS = \
 	$(BUILD_DIR)/boot.o \
 	$(BUILD_DIR)/kernel.o \
-	$(BUILD_DIR)/vga.o
+	$(BUILD_DIR)/vga.o \
+	$(BUILD_DIR)/test.o
 
 # Default target
 all: $(ISO_BIN)
@@ -38,6 +39,10 @@ $(BUILD_DIR)/kernel.o: kernel/kernel.c include/kernel/vga.h | $(BUILD_DIR)
 # Compile VGA driver
 $(BUILD_DIR)/vga.o: drivers/vga.c include/kernel/vga.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c drivers/vga.c -o $(BUILD_DIR)/vga.o
+
+# Compile kernel tests
+$(BUILD_DIR)/test.o: kernel/test.c include/kernel/test.h include/kernel/vga.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c kernel/test.c -o $(BUILD_DIR)/test.o
 
 # Link kernel binary
 $(KERNEL_BIN): $(OBJS) linker.ld

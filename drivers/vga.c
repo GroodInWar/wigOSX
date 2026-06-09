@@ -4,9 +4,6 @@
  * VGA text mode is normally 80 columns wide and 25 rows tall.
  * The text buffer begins at physical memory address 0xB8000.
  */
-#define VGA_WIDTH 80
-#define VGA_HEIGHT 25
-#define VGA_MEMORY 0xB8000
 
 static size_t terminal_row;
 static size_t terminal_column;
@@ -75,13 +72,24 @@ static void terminal_newline(void) {
 static void terminal_carriage_return(void) { terminal_column = 0; }
 
 static void terminal_tab(void) {
-  terminal_column = (terminal_column + 8) & ~(8 - 1);
+  size_t spaces = TAB_WIDTH - (terminal_column % TAB_WIDTH);
+  for (size_t i = 0; i < spaces; i++) {
+    terminal_putchar(' ');
+  }
 }
 
 static void terminal_backspace(void) {
   if (terminal_column > 0) {
     terminal_column--;
+  } else if (terminal_row > 0) {
+    terminal_row--;
+    terminal_column = VGA_WIDTH - 1;
+  } else {
+    return;
   }
+
+  size_t index = terminal_row * VGA_WIDTH + terminal_column;
+  terminal_buffer[index] = vga_entry(' ', terminal_color);
 }
 
 static void terminal_form_feed(void) { terminal_clear(); }
