@@ -19,7 +19,8 @@ OBJS = \
 	$(BUILD_DIR)/boot.o \
 	$(BUILD_DIR)/kernel.o \
 	$(BUILD_DIR)/vga.o \
-	$(BUILD_DIR)/test.o
+	$(BUILD_DIR)/test.o \
+	$(BUILD_DIR)/serial.o
 
 # Default target
 all: $(ISO_BIN)
@@ -33,12 +34,16 @@ $(BUILD_DIR)/boot.o: boot/boot.s | $(BUILD_DIR)
 	$(AS) boot/boot.s -o $(BUILD_DIR)/boot.o
 
 # Compile kernel
-$(BUILD_DIR)/kernel.o: kernel/kernel.c include/kernel/vga.h | $(BUILD_DIR)
+$(BUILD_DIR)/kernel.o: kernel/kernel.c include/kernel/vga.h include/kernel/serial.h include/kernel/test.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c kernel/kernel.c -o $(BUILD_DIR)/kernel.o
 
 # Compile VGA driver
 $(BUILD_DIR)/vga.o: drivers/vga.c include/kernel/vga.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c drivers/vga.c -o $(BUILD_DIR)/vga.o
+
+# Compile serial driver
+$(BUILD_DIR)/serial.o: drivers/serial.c include/kernel/serial.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c drivers/serial.c -o $(BUILD_DIR)/serial.o
 
 # Compile kernel tests
 $(BUILD_DIR)/test.o: kernel/test.c include/kernel/test.h include/kernel/vga.h | $(BUILD_DIR)
@@ -55,7 +60,7 @@ $(ISO_BIN): $(KERNEL_BIN) iso/boot/grub/grub.cfg
 
 # Run in QEMU
 run: $(ISO_BIN)
-	qemu-system-i386 -cdrom $(ISO_BIN)
+	qemu-system-i386 -cdrom $(ISO_BIN) -serial stdio
 
 # Clean generated files
 clean:
