@@ -1,3 +1,4 @@
+#include <kernel/gdt.h>
 #include <kernel/serial.h>
 #include <kernel/test.h>
 #include <kernel/vga.h>
@@ -5,7 +6,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/*
+/**
+ * @file kernel.c
+ * @brief Main C entry point for wigOSX.
+ */
+
+/**
+ * @brief Verifies that the configured compiler is not targeting the host OS.
+ *
  * Check if the compiler thinks you are targeting the wrong operating system.
  */
 #if defined(__linux__)
@@ -13,12 +21,20 @@
     "You are not using a cross-compiler, you will most certainly run into trouble"
 #endif
 
-/* This kernel currently targets 32-bit x86. */
+/**
+ * @brief Verifies that the kernel is being built for 32-bit x86.
+ */
 #if !defined(__i386__)
 #error "This kernel needs to be compiled with an i686-elf compiler"
 #endif
 
-void kernel_main(void) { 
+/**
+ * @brief Main kernel entry point called from the boot assembly.
+ *
+ * Initializes visible terminal output, starts serial logging, and runs the
+ * current VGA visual test suite.
+ */
+void kernel_main(void) {
   terminal_initialize();
 
   terminal_writestring("Welcome to wigOSX 0.003!\n");
@@ -34,6 +50,6 @@ void kernel_main(void) {
   }
 
   serial_writestring("[wigOSX] Running VGA visual tests...\n");
-  run_vga_tests(); 
+  run_vga_tests();
   serial_writestring("[wigOSX] VGA visual tests completed.\n");
 }

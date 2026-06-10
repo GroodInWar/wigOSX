@@ -2,10 +2,23 @@
 #include <kernel/vga.h>
 #include <stddef.h>
 
+/**
+ * @file test.c
+ * @brief VGA visual test suite implementation.
+ */
+
+/**
+ * @brief Restores the terminal's default light-grey-on-black color.
+ */
 static void reset_color(void) {
   terminal_setcolor(vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK));
 }
 
+/**
+ * @brief Prints a formatted visual test section heading.
+ *
+ * @param title Section title to display.
+ */
 static void print_section(const char* title) {
   terminal_writestring("\n");
 
@@ -17,6 +30,11 @@ static void print_section(const char* title) {
   reset_color();
 }
 
+/**
+ * @brief Prints the expected result for a visual test.
+ *
+ * @param text Description of what should be visible on screen.
+ */
 static void print_expected(const char* text) {
   terminal_setcolor(vga_entry_color(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK));
   terminal_writestring("Expected: ");
@@ -26,6 +44,9 @@ static void print_expected(const char* text) {
   reset_color();
 }
 
+/**
+ * @brief Verifies that null-terminated terminal strings are printed.
+ */
 static void test_terminal_writestring(void) {
   print_section("terminal_writestring");
 
@@ -33,6 +54,9 @@ static void test_terminal_writestring(void) {
   print_expected("A full sentence should appear above.");
 }
 
+/**
+ * @brief Verifies that individual terminal characters are printed.
+ */
 static void test_terminal_putchar(void) {
   print_section("terminal_putchar");
 
@@ -43,6 +67,9 @@ static void test_terminal_putchar(void) {
   print_expected("OK");
 }
 
+/**
+ * @brief Verifies that explicit-size terminal writes stop at the given size.
+ */
 static void test_terminal_write(void) {
   print_section("terminal_write with explicit size");
 
@@ -52,6 +79,9 @@ static void test_terminal_write(void) {
   print_expected("ABCDE");
 }
 
+/**
+ * @brief Verifies newline handling.
+ */
 static void test_newline(void) {
   print_section("newline: \\n");
 
@@ -62,6 +92,9 @@ static void test_newline(void) {
   print_expected("Three separate lines.");
 }
 
+/**
+ * @brief Verifies tab handling.
+ */
 static void test_tab(void) {
   print_section("tab: \\t");
 
@@ -70,6 +103,9 @@ static void test_tab(void) {
   print_expected("A, B, and C should be spaced apart by tab stops.");
 }
 
+/**
+ * @brief Verifies same-line backspace handling.
+ */
 static void test_backspace_same_line(void) {
   print_section("backspace on same line: \\b");
 
@@ -78,6 +114,9 @@ static void test_backspace_same_line(void) {
   print_expected("ABD");
 }
 
+/**
+ * @brief Verifies repeated backspace handling.
+ */
 static void test_backspace_multiple_chars(void) {
   print_section("multiple backspaces");
 
@@ -86,6 +125,9 @@ static void test_backspace_multiple_chars(void) {
   print_expected("HEP!");
 }
 
+/**
+ * @brief Verifies backspace behavior at the start of a line.
+ */
 static void test_backspace_at_line_start(void) {
   print_section("backspace at start of line");
 
@@ -94,6 +136,9 @@ static void test_backspace_at_line_start(void) {
   print_expected("ABZ if backspace moves to the previous line.");
 }
 
+/**
+ * @brief Verifies carriage return handling.
+ */
 static void test_carriage_return(void) {
   print_section("carriage return: \\r");
 
@@ -102,6 +147,9 @@ static void test_carriage_return(void) {
   print_expected("ZBC");
 }
 
+/**
+ * @brief Verifies output using several VGA foreground/background colors.
+ */
 static void test_color_output(void) {
   print_section("VGA color output");
 
@@ -119,6 +167,9 @@ static void test_color_output(void) {
   print_expected("Three different color styles.");
 }
 
+/**
+ * @brief Verifies automatic line wrapping at the screen edge.
+ */
 static void test_line_wrapping(void) {
   print_section("line wrapping");
 
@@ -131,6 +182,9 @@ static void test_line_wrapping(void) {
   print_expected("80 X characters should fill one row, then wrap to the next row.");
 }
 
+/**
+ * @brief Verifies that tabs near the end of a line remain bounded.
+ */
 static void test_tab_near_end_of_line(void) {
   print_section("tab near end of line");
 
@@ -143,6 +197,9 @@ static void test_tab_near_end_of_line(void) {
   print_expected("The T should not corrupt memory. It may wrap to the next line.");
 }
 
+/**
+ * @brief Verifies explicit terminal clearing.
+ */
 static void test_terminal_clear_function(void) {
   print_section("terminal_clear");
 
@@ -152,6 +209,9 @@ static void test_terminal_clear_function(void) {
   terminal_writestring("terminal_clear() worked if this is near the top-left.\n");
 }
 
+/**
+ * @brief Verifies form-feed screen clearing.
+ */
 static void test_form_feed(void) {
   print_section("form feed: \\f");
 
@@ -161,6 +221,9 @@ static void test_form_feed(void) {
   terminal_writestring("Form feed worked if the screen was cleared.\n");
 }
 
+/**
+ * @brief Runs all VGA visual tests in display order.
+ */
 void run_vga_tests(void) {
   terminal_initialize();
 
@@ -185,7 +248,7 @@ void run_vga_tests(void) {
   test_line_wrapping();
   test_tab_near_end_of_line();
 
-  /*
+  /**
    * These clear the screen, so keep them near the end.
    */
   test_terminal_clear_function();

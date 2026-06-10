@@ -1,13 +1,24 @@
 #include <kernel/serial.h>
 
-/*
+/**
+ * @file serial.c
+ * @brief Polling-based COM1 serial logging driver.
+ *
  * COM1 is the first standard PC serial port.
  * Its base I/O port address is 0x3F8.
  */
 
+/**
+ * @brief Tracks whether COM1 initialization has completed.
+ */
 static bool serial_initialized = false;
 
-/*
+/**
+ * @brief Writes one byte to an x86 I/O port.
+ *
+ * @param port I/O port address.
+ * @param value Byte to write.
+ *
  * Write one byte to an x86 I/O port.
  *
  * Security note:
@@ -18,8 +29,11 @@ static inline void outb(uint16_t port, uint8_t value) {
   __asm__ volatile("outb %0, %1" : : "a"(value), "Nd"(port));
 }
 
-/*
- * Read one byte from an x86 I/O port.
+/**
+ * @brief Reads one byte from an x86 I/O port.
+ *
+ * @param port I/O port address.
+ * @return Byte read from the port.
  */
 static inline uint8_t inb(uint16_t port) {
   uint8_t value;
@@ -27,6 +41,12 @@ static inline uint8_t inb(uint16_t port) {
   return value;
 }
 
+/**
+ * @brief Computes the length of a null-terminated string.
+ *
+ * @param str String to measure.
+ * @return Number of bytes before the null terminator.
+ */
 static size_t serial_strlen(const char *str) {
   size_t length = 0;
 
@@ -37,7 +57,11 @@ static size_t serial_strlen(const char *str) {
   return length;
 }
 
-/*
+/**
+ * @brief Reports whether COM1 is ready to accept another byte.
+ *
+ * @return true if the transmitter holding register is empty.
+ *
  * The Line Status Register is at COM1 + 5.
  * Bit 5 tells us whether the transmitter is empty.
  */
@@ -45,7 +69,9 @@ static bool serial_can_transmit(void) {
   return (inb(SERIAL_PORT_COM1 + 5) & 0x20) != 0;
 }
 
-/*
+/**
+ * @brief Initializes COM1 for polling-based serial output.
+ *
  * Initialize COM1 for polling-based serial output.
  *
  * This sets:
@@ -56,35 +82,35 @@ static bool serial_can_transmit(void) {
  * - FIFO enabled
  */
 void serial_initialize(void) {
-  /*
+  /**
    * Disable serial interrupts.
    * We are using polling for now, not interrupt-driven serial.
    */
   outb(SERIAL_PORT_COM1 + 1, 0x00);
 
-  /*
+  /**
    * Enable DLAB so we can set the baud rate divisor.
    */
   outb(SERIAL_PORT_COM1 + 3, 0x80);
 
-  /*
+  /**
    * Divisor 3 gives 38400 baud.
    */
   outb(SERIAL_PORT_COM1 + 0, 0x03);
   outb(SERIAL_PORT_COM1 + 1, 0x00);
 
-  /*
+  /**
    * 8 bits, no parity, one stop bit.
    * This also disables DLAB again.
    */
   outb(SERIAL_PORT_COM1 + 3, 0x03);
 
-  /*
+  /**
    * Enable FIFO, clear it, and use a 14-byte threshold.
    */
   outb(SERIAL_PORT_COM1 + 2, 0xC7);
 
-  /*
+  /**
    * Enable IRQ output lines and mark RTS/DSR ready.
    * We still are not using interrupts yet because IER is disabled above.
    */
@@ -102,7 +128,7 @@ void serial_putchar(char c) {
     return;
   }
 
-  /*
+  /**
    * Many serial terminals expect CRLF for a newline.
    * So '\n' becomes '\r' followed by '\n'.
    */
@@ -111,7 +137,7 @@ void serial_putchar(char c) {
   }
 
   while (!serial_can_transmit()) {
-    /*
+    /**
      * Busy wait.
      * This is okay for Stage 3.
      * Later, interrupts can make this more efficient.

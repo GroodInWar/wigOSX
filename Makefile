@@ -1,20 +1,31 @@
-# Cross-compiler tools
+## @file Makefile
+## @brief Builds the wigOSX kernel binary and bootable ISO image.
+
+## @brief C cross-compiler used for freestanding i386 code.
 CC = i686-elf-gcc
+
+## @brief Assembler used for i386 assembly sources.
 AS = i686-elf-as
 
-# Project folders
+## @brief Directory for generated object files and final images.
 BUILD_DIR = build
+
+## @brief Directory containing the bootable ISO filesystem layout.
 ISO_DIR = iso
 
-# Output files
+## @brief Linked kernel binary output path.
 KERNEL_BIN = $(BUILD_DIR)/wigOSX.bin
+
+## @brief Bootable ISO output path.
 ISO_BIN = $(BUILD_DIR)/wigOSX.iso
 
-# Compiler and linker flags
+## @brief Compiler flags for freestanding kernel C sources.
 CFLAGS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Iinclude
+
+## @brief Linker flags for the freestanding kernel image.
 LDFLAGS = -T linker.ld -ffreestanding -O2 -nostdlib
 
-# Object files used to build the kernel
+## @brief Object files linked into the kernel binary.
 OBJS = \
 	$(BUILD_DIR)/boot.o \
 	$(BUILD_DIR)/kernel.o \
@@ -22,47 +33,47 @@ OBJS = \
 	$(BUILD_DIR)/test.o \
 	$(BUILD_DIR)/serial.o
 
-# Default target
+## @brief Default target that builds the bootable ISO image.
 all: $(ISO_BIN)
 
-# Create build folder
+## @brief Creates the build output directory.
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-# Assemble boot code
+## @brief Assembles the Multiboot entry point.
 $(BUILD_DIR)/boot.o: boot/boot.s | $(BUILD_DIR)
 	$(AS) boot/boot.s -o $(BUILD_DIR)/boot.o
 
-# Compile kernel
+## @brief Compiles the main kernel entry point.
 $(BUILD_DIR)/kernel.o: kernel/kernel.c include/kernel/vga.h include/kernel/serial.h include/kernel/test.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c kernel/kernel.c -o $(BUILD_DIR)/kernel.o
 
-# Compile VGA driver
+## @brief Compiles the VGA text-mode terminal driver.
 $(BUILD_DIR)/vga.o: drivers/vga.c include/kernel/vga.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c drivers/vga.c -o $(BUILD_DIR)/vga.o
 
-# Compile serial driver
+## @brief Compiles the COM1 serial logging driver.
 $(BUILD_DIR)/serial.o: drivers/serial.c include/kernel/serial.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c drivers/serial.c -o $(BUILD_DIR)/serial.o
 
-# Compile kernel tests
+## @brief Compiles the kernel visual tests.
 $(BUILD_DIR)/test.o: kernel/test.c include/kernel/test.h include/kernel/vga.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c kernel/test.c -o $(BUILD_DIR)/test.o
 
-# Link kernel binary
+## @brief Links all kernel objects into the freestanding binary.
 $(KERNEL_BIN): $(OBJS) linker.ld
 	$(CC) $(LDFLAGS) -o $(KERNEL_BIN) $(OBJS) -lgcc
 
-# Build bootable ISO
+## @brief Copies the kernel into the ISO tree and creates a bootable ISO.
 $(ISO_BIN): $(KERNEL_BIN) iso/boot/grub/grub.cfg
 	cp $(KERNEL_BIN) $(ISO_DIR)/boot/wigOSX.bin
 	grub-mkrescue -o $(ISO_BIN) $(ISO_DIR)
 
-# Run in QEMU
+## @brief Runs the kernel ISO in QEMU with serial output on stdio.
 run: $(ISO_BIN)
 	qemu-system-i386 -cdrom $(ISO_BIN) -serial stdio
 
-# Clean generated files
+## @brief Removes generated build outputs.
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f $(ISO_DIR)/boot/wigOSX.bin

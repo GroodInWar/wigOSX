@@ -1,20 +1,44 @@
 #include <kernel/vga.h>
 
-/*
+/**
+ * @file vga.c
+ * @brief VGA text-mode terminal driver implementation.
+ *
  * VGA text mode is normally 80 columns wide and 25 rows tall.
  * The text buffer begins at physical memory address 0xB8000.
  */
 
+/**
+ * @brief Current terminal row.
+ */
 static size_t terminal_row;
+
+/**
+ * @brief Current terminal column.
+ */
 static size_t terminal_column;
+
+/**
+ * @brief Active encoded VGA color byte.
+ */
 static uint8_t terminal_color;
+
+/**
+ * @brief Memory-mapped VGA text buffer.
+ */
 static volatile uint16_t* terminal_buffer = (uint16_t*)VGA_MEMORY;
 
 uint8_t vga_entry_color(enum vga_color foreground, enum vga_color background) {
   return foreground | background << 4;
 }
 
-/*
+/**
+ * @brief Builds one VGA text-mode buffer entry.
+ *
+ * @param character Character byte to display.
+ * @param color Encoded VGA color byte.
+ * @return Encoded 16-bit VGA text cell.
+ *
  * Each VGA text cell is 2 bytes:
  * lower byte  = ASCII character
  * higher byte = color
@@ -23,6 +47,12 @@ static uint16_t vga_entry(unsigned char character, uint8_t color) {
   return (uint16_t)character | (uint16_t)color << 8;
 }
 
+/**
+ * @brief Computes the length of a null-terminated string.
+ *
+ * @param str String to measure.
+ * @return Number of bytes before the null terminator.
+ */
 static size_t terminal_strlen(const char* str) {
   size_t length = 0;
 
@@ -55,11 +85,14 @@ void terminal_initialize(void) {
 
 void terminal_setcolor(uint8_t color) { terminal_color = color; }
 
+/**
+ * @brief Advances the cursor to the beginning of the next row.
+ */
 static void terminal_newline(void) {
   terminal_column = 0;
   terminal_row++;
 
-  /*
+  /**
    * Simple Stage 2 behavior:
    * If we reach the bottom, wrap back to the top.
    * Later, we can replace this with real scrolling.
@@ -69,8 +102,14 @@ static void terminal_newline(void) {
   }
 }
 
+/**
+ * @brief Moves the cursor to the beginning of the current row.
+ */
 static void terminal_carriage_return(void) { terminal_column = 0; }
 
+/**
+ * @brief Emits spaces until the cursor reaches the next tab stop.
+ */
 static void terminal_tab(void) {
   size_t spaces = TAB_WIDTH - (terminal_column % TAB_WIDTH);
   for (size_t i = 0; i < spaces; i++) {
@@ -78,6 +117,9 @@ static void terminal_tab(void) {
   }
 }
 
+/**
+ * @brief Moves the cursor backward and clears the erased cell.
+ */
 static void terminal_backspace(void) {
   if (terminal_column > 0) {
     terminal_column--;
@@ -92,6 +134,9 @@ static void terminal_backspace(void) {
   terminal_buffer[index] = vga_entry(' ', terminal_color);
 }
 
+/**
+ * @brief Handles form-feed by clearing the terminal.
+ */
 static void terminal_form_feed(void) { terminal_clear(); }
 
 void terminal_putchar(char c) {
