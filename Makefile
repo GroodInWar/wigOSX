@@ -33,7 +33,10 @@ OBJS = \
 	$(BUILD_DIR)/serial.o \
 	$(BUILD_DIR)/gdt.o \
 	$(BUILD_DIR)/gdt_flush.o \
-	$(BUILD_DIR)/test.o
+	$(BUILD_DIR)/test.o \
+	$(BUILD_DIR)/idt.o \
+	$(BUILD_DIR)/idt_flush.o \
+	$(BUILD_DIR)/isr_stubs.o
 
 ## @brief Default target that builds the bootable ISO image.
 all: $(ISO_BIN)
@@ -47,7 +50,7 @@ $(BUILD_DIR)/boot.o: boot/boot.s | $(BUILD_DIR)
 	$(AS) boot/boot.s -o $(BUILD_DIR)/boot.o
 
 ## @brief Compiles the main kernel entry point.
-$(BUILD_DIR)/kernel.o: kernel/kernel.c include/kernel/vga.h include/kernel/serial.h include/kernel/gdt.h include/kernel/test.h | $(BUILD_DIR)
+$(BUILD_DIR)/kernel.o: kernel/kernel.c include/kernel/vga.h include/kernel/serial.h include/kernel/gdt.h include/kernel/idt.h include/kernel/test.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c kernel/kernel.c -o $(BUILD_DIR)/kernel.o
 
 ## @brief Compiles the VGA text-mode terminal driver.
@@ -65,6 +68,18 @@ $(BUILD_DIR)/gdt.o: arch/i386/gdt.c include/kernel/gdt.h | $(BUILD_DIR)
 ## @brief Assembles the i386 GDT loading helper.
 $(BUILD_DIR)/gdt_flush.o: arch/i386/gdt_flush.s | $(BUILD_DIR)
 	$(AS) arch/i386/gdt_flush.s -o $(BUILD_DIR)/gdt_flush.o
+
+## @brief Compiles the i386 IDT setup code.
+$(BUILD_DIR)/idt.o: arch/i386/idt.c include/kernel/idt.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c arch/i386/idt.c -o $(BUILD_DIR)/idt.o
+
+## @brief Assembles the i386 IDT loading helper.
+$(BUILD_DIR)/idt_flush.o: arch/i386/idt_flush.s | $(BUILD_DIR)
+	$(AS) arch/i386/idt_flush.s -o $(BUILD_DIR)/idt_flush.o
+
+## @brief Assembles the i386 CPU exception stubs.
+$(BUILD_DIR)/isr_stubs.o: arch/i386/isr_stubs.s | $(BUILD_DIR)
+	$(AS) arch/i386/isr_stubs.s -o $(BUILD_DIR)/isr_stubs.o
 
 ## @brief Compiles the kernel visual tests.
 $(BUILD_DIR)/test.o: kernel/test.c include/kernel/test.h include/kernel/vga.h | $(BUILD_DIR)

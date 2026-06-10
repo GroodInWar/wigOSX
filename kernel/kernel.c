@@ -1,4 +1,5 @@
 #include <kernel/gdt.h>
+#include <kernel/idt.h>
 #include <kernel/serial.h>
 #include <kernel/test.h>
 #include <kernel/vga.h>
@@ -31,8 +32,8 @@
 /**
  * @brief Main kernel entry point called from the boot assembly.
  *
- * Initializes visible terminal output, starts serial logging, and runs the
- * current VGA visual test suite.
+ * Initializes visible terminal output, starts serial logging, initializes the
+ * GDT, and runs the current VGA visual test suite.
  */
 void kernel_main(void) {
   terminal_initialize();
@@ -50,12 +51,20 @@ void kernel_main(void) {
 
   terminal_writestring("Initializing GDT...\n");
   serial_writestring("[wigOSX] Stage 4: Initializing GDT...\n");
-  
+
   gdt_initialize();
 
   terminal_writestring("GDT initialized successfully.\n");
   serial_writestring("[wigOSX] Stage 4: GDT initialized successfully.\n");
-  
+
+  terminal_writestring("Initializing IDT...\n");
+  serial_writestring("[wigOSX] Stage 5: Initializing IDT...\n");
+
+  idt_initialize();
+
+  terminal_writestring("IDT initialized successfully.\n");
+  serial_writestring("[wigOSX] Stage 5: IDT initialized successfully.\n");
+
   terminal_writestring("Running VGA visual tests...\n");
   serial_writestring("[wigOSX] Running VGA visual tests...\n");
 
