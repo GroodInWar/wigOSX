@@ -30,8 +30,10 @@ OBJS = \
 	$(BUILD_DIR)/boot.o \
 	$(BUILD_DIR)/kernel.o \
 	$(BUILD_DIR)/vga.o \
-	$(BUILD_DIR)/test.o \
-	$(BUILD_DIR)/serial.o
+	$(BUILD_DIR)/serial.o \
+	$(BUILD_DIR)/gdt.o \
+	$(BUILD_DIR)/gdt_flush.o \
+	$(BUILD_DIR)/test.o
 
 ## @brief Default target that builds the bootable ISO image.
 all: $(ISO_BIN)
@@ -45,7 +47,7 @@ $(BUILD_DIR)/boot.o: boot/boot.s | $(BUILD_DIR)
 	$(AS) boot/boot.s -o $(BUILD_DIR)/boot.o
 
 ## @brief Compiles the main kernel entry point.
-$(BUILD_DIR)/kernel.o: kernel/kernel.c include/kernel/vga.h include/kernel/serial.h include/kernel/test.h | $(BUILD_DIR)
+$(BUILD_DIR)/kernel.o: kernel/kernel.c include/kernel/vga.h include/kernel/serial.h include/kernel/gdt.h include/kernel/test.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c kernel/kernel.c -o $(BUILD_DIR)/kernel.o
 
 ## @brief Compiles the VGA text-mode terminal driver.
@@ -55,6 +57,14 @@ $(BUILD_DIR)/vga.o: drivers/vga.c include/kernel/vga.h | $(BUILD_DIR)
 ## @brief Compiles the COM1 serial logging driver.
 $(BUILD_DIR)/serial.o: drivers/serial.c include/kernel/serial.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c drivers/serial.c -o $(BUILD_DIR)/serial.o
+
+## @brief Compiles the i386 GDT setup code.
+$(BUILD_DIR)/gdt.o: arch/i386/gdt.c include/kernel/gdt.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c arch/i386/gdt.c -o $(BUILD_DIR)/gdt.o
+
+## @brief Assembles the i386 GDT loading helper.
+$(BUILD_DIR)/gdt_flush.o: arch/i386/gdt_flush.s | $(BUILD_DIR)
+	$(AS) arch/i386/gdt_flush.s -o $(BUILD_DIR)/gdt_flush.o
 
 ## @brief Compiles the kernel visual tests.
 $(BUILD_DIR)/test.o: kernel/test.c include/kernel/test.h include/kernel/vga.h | $(BUILD_DIR)
