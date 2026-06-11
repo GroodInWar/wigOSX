@@ -1,5 +1,8 @@
+#include <kernel/cpu.h>
 #include <kernel/gdt.h>
 #include <kernel/idt.h>
+#include <kernel/pic.h>
+#include <kernel/pit.h>
 #include <kernel/serial.h>
 #include <kernel/test.h>
 #include <kernel/vga.h>
@@ -36,12 +39,12 @@
  * GDT and IDT, and runs the current VGA visual test suite.
  */
 void kernel_main(void) {
-  // Terminal output
+  /* Bring up VGA first so every later initialization step can report status. */
   terminal_initialize();
 
   terminal_writestring("Initializing serial logging...\n");
 
-  // Initialize serial logging
+  /* Serial logging gives QEMU/host-side diagnostics even if VGA output fails. */
   serial_initialize();
 
   if (serial_is_initialized()) {
@@ -54,7 +57,7 @@ void kernel_main(void) {
   terminal_writestring("Initializing GDT...\n");
   serial_writestring("[wigOSX] Stage 4: Initializing GDT...\n");
 
-  // Initialize Global Descriptor Table
+  /* Load a kernel-owned flat GDT before installing interrupt descriptors. */
   gdt_initialize();
 
   terminal_writestring("GDT initialized successfully.\n");
@@ -63,18 +66,55 @@ void kernel_main(void) {
   terminal_writestring("Initializing IDT...\n");
   serial_writestring("[wigOSX] Stage 5: Initializing IDT...\n");
 
-  // Initialize Interrupt Descriptor Table
+  /* Install exception and IRQ gates, but keep maskable interrupts disabled. */
   idt_initialize();
 
   terminal_writestring("IDT initialized successfully.\n");
   serial_writestring("[wigOSX] Stage 5: IDT initialized successfully.\n");
 
-  terminal_writestring("Running VGA visual tests...\n");
-  serial_writestring("[wigOSX] Running VGA visual tests...\n");
+  terminal_writestring("Initializing PIC...\n");
+  serial_writestring("[wigOSX] Stage 6: Initializing PIC...\n");
 
-  run_vga_tests();
-  terminal_clear();
+  /*
+   * Move hardware IRQs out of the CPU exception range, then enable only IRQ0
+   * because the PIT is the only hardware interrupt with a handler right now.
+   */
+  pic_remap();
+  pic_mask_all();
+  pic_unmask_irq(0);
 
-  serial_writestring("[wigOSX] VGA visual tests completed.\n");
-  terminal_writestring("Welcome to wigOSX 0.004!\n");
+  terminal_writestring("PIC initialized successfully.\n");
+  serial_writestring("[wigOSX] Stage 6: PIC initialized.\n");
+
+  terminal_writestring("Initializing PIT...\n");
+  serial_writestring("[wigOSX] Stage 6: Initializing PIT at 100 Hz...\n");
+
+  /* Program the timer before allowing the PIC to deliver IRQ0 to the CPU. */
+  pit_initialize(100);
+
+  terminal_writestring("PIT initialized successfully.\n");
+  serial_writestring("[wigOSX] Stage 6: PIT initialized at 100 Hz.\n");
+
+  cpu_enable_interrupts();
+
+  terminal_writestring("Hardware interrupts enabled.\n");
+  serial_writestring("[wigOSX] Interrupts enabled.\n");
+
+  /*
+   * The VGA visual suite is useful during terminal-driver work. It is left
+   * here as an easy manual test hook without running on every boot.
+   */
+  // terminal_writestring("Running VGA visual tests...\n");
+  // serial_writestring("[wigOSX] Running VGA visual tests...\n");
+
+  // run_vga_tests();
+  // terminal_clear();
+
+  // serial_writestring("[wigOSX] VGA visual tests completed.\n");
+  terminal_writestring("Welcome to wigOSX 0.006!\n");
+
+  /* Sleep until interrupts arrive instead of burning CPU in a spin loop. */
+  while (1) {
+    cpu_halt();
+  }
 }

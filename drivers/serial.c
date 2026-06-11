@@ -82,37 +82,28 @@ static bool serial_can_transmit(void) {
  * - FIFO enabled
  */
 void serial_initialize(void) {
-  /**
-   * Disable serial interrupts.
-   * We are using polling for now, not interrupt-driven serial.
+  /*
+   * Disable serial interrupts. This driver uses polling for now, which keeps
+   * early boot logging independent from the IDT/PIC setup.
    */
   outb(SERIAL_PORT_COM1 + 1, 0x00);
 
-  /**
-   * Enable DLAB so we can set the baud rate divisor.
-   */
+  /* Enable DLAB so the low/high divisor bytes are accessible. */
   outb(SERIAL_PORT_COM1 + 3, 0x80);
 
-  /**
-   * Divisor 3 gives 38400 baud.
-   */
+  /* Divisor 3 gives 38400 baud from the standard 115200 Hz serial clock. */
   outb(SERIAL_PORT_COM1 + 0, 0x03);
   outb(SERIAL_PORT_COM1 + 1, 0x00);
 
-  /**
-   * 8 bits, no parity, one stop bit.
-   * This also disables DLAB again.
-   */
+  /* Use 8 data bits, no parity, one stop bit, and disable DLAB again. */
   outb(SERIAL_PORT_COM1 + 3, 0x03);
 
-  /**
-   * Enable FIFO, clear it, and use a 14-byte threshold.
-   */
+  /* Enable FIFO, clear it, and use a 14-byte threshold. */
   outb(SERIAL_PORT_COM1 + 2, 0xC7);
 
-  /**
-   * Enable IRQ output lines and mark RTS/DSR ready.
-   * We still are not using interrupts yet because IER is disabled above.
+  /*
+   * Enable IRQ output lines and mark RTS/DSR ready. IER remains disabled, so
+   * output is still polling-based.
    */
   outb(SERIAL_PORT_COM1 + 4, 0x0B);
 
@@ -128,19 +119,15 @@ void serial_putchar(char c) {
     return;
   }
 
-  /**
-   * Many serial terminals expect CRLF for a newline.
-   * So '\n' becomes '\r' followed by '\n'.
-   */
+  /* Many serial terminals expect CRLF, so '\n' is expanded to "\r\n". */
   if (c == '\n') {
     serial_putchar('\r');
   }
 
   while (!serial_can_transmit()) {
-    /**
-     * Busy wait.
-     * This is okay for Stage 3.
-     * Later, interrupts can make this more efficient.
+    /*
+     * Busy waiting is acceptable during early boot. Interrupt-driven serial
+     * output can replace this once the kernel has a scheduler or wait queues.
      */
   }
 

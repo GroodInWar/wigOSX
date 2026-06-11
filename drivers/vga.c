@@ -92,10 +92,9 @@ static void terminal_newline(void) {
   terminal_column = 0;
   terminal_row++;
 
-  /**
-   * Simple Stage 2 behavior:
-   * If we reach the bottom, wrap back to the top.
-   * Later, we can replace this with real scrolling.
+  /*
+   * Simple Stage 2 behavior: if we reach the bottom, wrap back to the top.
+   * Later, this can be replaced with real scrolling.
    */
   if (terminal_row >= VGA_HEIGHT) {
     terminal_row = 0;

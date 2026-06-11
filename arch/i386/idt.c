@@ -1,4 +1,6 @@
 #include <kernel/idt.h>
+#include <kernel/pic.h>
+#include <kernel/pit.h>
 #include <kernel/serial.h>
 #include <kernel/vga.h>
 #include <stddef.h>
@@ -7,8 +9,18 @@
 /**
  * @file idt.c
  * @brief Builds and loads the i386 Interrupt Descriptor Table.
+ *
+ * The IDT maps CPU exceptions and hardware interrupt vectors to small
+ * assembly stubs. Those stubs normalize the stack frame before calling the
+ * C handlers in this file.
  */
 
+/**
+ * @brief One 8-byte IDT interrupt-gate descriptor.
+ *
+ * i386 splits a handler address across two 16-bit fields. The packed layout
+ * is required because the CPU reads this structure directly.
+ */
 struct idt_entry {
   uint16_t base_low;
   uint16_t selector;
@@ -17,11 +29,21 @@ struct idt_entry {
   uint16_t base_high;
 } __attribute__((packed));
 
+/**
+ * @brief Pointer structure loaded by the lidt instruction.
+ */
 struct idt_pointer {
   uint16_t limit;
   uint32_t base;
 } __attribute__((packed));
 
+/**
+ * @brief Register snapshot built by arch/i386/isr_stubs.s.
+ *
+ * The assembly stubs push these fields in a fixed order before calling the
+ * C handler. Keep this layout synchronized with isr_common_stub and
+ * irq_common_stub.
+ */
 struct interrupt_frame {
   uint32_t ds;
   uint32_t edi;
@@ -42,10 +64,15 @@ struct interrupt_frame {
 static struct idt_entry idt_entries[IDT_ENTRY_COUNT];
 static struct idt_pointer idt_ptr;
 
+/**
+ * @brief Assembly helper that loads the IDT pointer into IDTR.
+ *
+ * @param idt_ptr_address Address of the IDT pointer structure.
+ */
 extern void idt_flush(uint32_t idt_ptr_address);
 
 /*
- * These are implemented in arch/i386/isr_stubs.s.
+ * CPU exception stubs implemented in arch/i386/isr_stubs.s.
  */
 extern void isr0(void);
 extern void isr1(void);
@@ -79,6 +106,26 @@ extern void isr28(void);
 extern void isr29(void);
 extern void isr30(void);
 extern void isr31(void);
+
+/*
+ * Hardware IRQ stubs implemented in arch/i386/isr_stubs.s.
+ */
+extern void irq0(void);
+extern void irq1(void);
+extern void irq2(void);
+extern void irq3(void);
+extern void irq4(void);
+extern void irq5(void);
+extern void irq6(void);
+extern void irq7(void);
+extern void irq8(void);
+extern void irq9(void);
+extern void irq10(void);
+extern void irq11(void);
+extern void irq12(void);
+extern void irq13(void);
+extern void irq14(void);
+extern void irq15(void);
 
 /**
  * @brief Writes one interrupt gate into the IDT.
@@ -168,7 +215,51 @@ static void idt_install_cpu_exceptions(void) {
 }
 
 /**
+ * @brief Installs hardware IRQ handlers into IDT vectors 32-47.
+ *
+ * The PIC is remapped to these vectors so hardware IRQs do not overlap the
+ * CPU exception range at vectors 0-31.
+ */
+static void idt_install_hardware_interrupts(void) {
+  idt_set_gate(32, (uint32_t)irq0, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+  idt_set_gate(33, (uint32_t)irq1, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+  idt_set_gate(34, (uint32_t)irq2, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+  idt_set_gate(35, (uint32_t)irq3, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+  idt_set_gate(36, (uint32_t)irq4, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+  idt_set_gate(37, (uint32_t)irq5, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+  idt_set_gate(38, (uint32_t)irq6, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+  idt_set_gate(39, (uint32_t)irq7, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+  idt_set_gate(40, (uint32_t)irq8, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+  idt_set_gate(41, (uint32_t)irq9, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+  idt_set_gate(42, (uint32_t)irq10, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+  idt_set_gate(43, (uint32_t)irq11, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+  idt_set_gate(44, (uint32_t)irq12, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+  idt_set_gate(45, (uint32_t)irq13, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+  idt_set_gate(46, (uint32_t)irq14, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+  idt_set_gate(47, (uint32_t)irq15, IDT_KERNEL_CODE_SELECTOR,
+               IDT_INTERRUPT_GATE_RING0);
+}
+
+/**
  * @brief Initializes and loads the IDT.
+ *
+ * Empty entries are installed first so every descriptor starts from a known
+ * state, then the CPU exception and hardware interrupt gates are populated.
  */
 void idt_initialize(void) {
   idt_ptr.limit = sizeof(idt_entries) - 1;
@@ -179,6 +270,7 @@ void idt_initialize(void) {
   }
 
   idt_install_cpu_exceptions();
+  idt_install_hardware_interrupts();
 
   idt_flush((uint32_t)&idt_ptr);
 }
@@ -189,15 +281,38 @@ void idt_initialize(void) {
  * @param frame Saved CPU state pushed by the common ISR stub.
  */
 void isr_handler(struct interrupt_frame* frame) {
+  /*
+   * Exception-specific diagnostics will eventually use frame. For now the
+   * halt path is intentionally simple and avoids returning to a bad context.
+   */
+  (void)frame;
+
   terminal_setcolor(vga_entry_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK));
   terminal_writestring("CPU exception caught.\n");
 
   serial_writestring("[wigOSX] CPU exception caught.\n");
   serial_writestring("[wigOSX] System halted.\n");
 
-  (void)frame;
-
   while (1) {
     __asm__ volatile("cli; hlt");
   }
+}
+
+/**
+ * @brief C-level hardware interrupt handler called by IRQ stubs.
+ *
+ * @param frame Saved CPU state pushed by the IRQ common stub.
+ */
+void irq_handler(struct interrupt_frame* frame) {
+  uint32_t irq = frame->interrupt_number - 32;
+
+  /*
+   * IRQ0 is the programmable interval timer. Other IRQ lines are acknowledged
+   * for now but do not yet have device-specific handlers.
+   */
+  if (irq == 0) {
+    pit_handle_interrupt();
+  }
+
+  pic_send_eoi((uint8_t)irq);
 }

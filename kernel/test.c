@@ -248,9 +248,7 @@ void run_vga_tests(void) {
   test_line_wrapping();
   test_tab_near_end_of_line();
 
-  /**
-   * These clear the screen, so keep them near the end.
-   */
+  /* These clear the screen, so keep them near the end. */
   test_terminal_clear_function();
   test_form_feed();
 

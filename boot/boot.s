@@ -68,30 +68,24 @@ stack_top:
 .global _start
 .type _start, @function
 _start:
-  /**
+  /*
    * The bootloader has loaded us into 32-bit protected mode on an x86
    * machine. Interrupts and paging are disabled, and the processor state is
    * otherwise defined by the Multiboot standard.
    */
   
-  /**
-   * Set ESP to the top of the early boot stack before entering C code.
-   */
+  /* Set ESP to the top of the early boot stack before entering C code. */
   mov $stack_top, %esp
 
-  /**
+  /*
    * Additional processor setup such as GDT, paging, or floating-point support
    * can be placed here before the high-level kernel is entered.
    */
 
-  /**
-   * Enter the high-level kernel with the stack alignment expected by the ABI.
-   */
+  /* Enter the high-level kernel with the stack alignment expected by the ABI. */
 	call kernel_main
 
-  /**
-   * Halt forever if kernel_main() returns.
-   */
+  /* Halt forever if kernel_main() returns. */
 	cli
 1:	hlt
 	jmp 1b

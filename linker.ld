@@ -16,49 +16,41 @@ ENTRY(_start)
  */
 SECTIONS
 {
-  /**
-   * @brief Kernel load address.
+  /*
+   * Kernel load address.
    *
    * The kernel is linked at 2 MiB, which is a safer modern load point than the
    * traditional 1 MiB address on some firmware layouts.
    */
   . = 2M;
 
-  /**
-   * @brief Executable code and the Multiboot header.
-   */
+  /* Executable code and the Multiboot header. */
   .text BLOCK(4K) : ALIGN(4K) 
   {
     *(.multiboot)
     *(.text)
   }
 
-  /**
-   * @brief Read-only data.
-   */
+  /* Read-only data. */
   .rodata BLOCK(4K) : ALIGN(4K)
   {
     *(.rodata)
   }
 
-  /**
-   * @brief Initialized read-write data.
-   */
+  /* Initialized read-write data. */
   .data BLOCK(4K) : ALIGN(4K)
   {
     *(.data)
   }
 
-  /**
-   * @brief Uninitialized read-write data and the early boot stack.
-   */
+  /* Uninitialized read-write data and the early boot stack. */
   .bss BLOCK(4K) : ALIGN(4K)
   {
     *(COMMON)
     *(.bss)
   }
 
-  /**
+  /*
    * Additional compiler-generated sections can be added here as needed.
    */
 }
