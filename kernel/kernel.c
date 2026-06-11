@@ -33,13 +33,15 @@
  * @brief Main kernel entry point called from the boot assembly.
  *
  * Initializes visible terminal output, starts serial logging, initializes the
- * GDT, and runs the current VGA visual test suite.
+ * GDT and IDT, and runs the current VGA visual test suite.
  */
 void kernel_main(void) {
+  // Terminal output
   terminal_initialize();
 
   terminal_writestring("Initializing serial logging...\n");
 
+  // Initialize serial logging
   serial_initialize();
 
   if (serial_is_initialized()) {
@@ -52,6 +54,7 @@ void kernel_main(void) {
   terminal_writestring("Initializing GDT...\n");
   serial_writestring("[wigOSX] Stage 4: Initializing GDT...\n");
 
+  // Initialize Global Descriptor Table
   gdt_initialize();
 
   terminal_writestring("GDT initialized successfully.\n");
@@ -60,6 +63,7 @@ void kernel_main(void) {
   terminal_writestring("Initializing IDT...\n");
   serial_writestring("[wigOSX] Stage 5: Initializing IDT...\n");
 
+  // Initialize Interrupt Descriptor Table
   idt_initialize();
 
   terminal_writestring("IDT initialized successfully.\n");
