@@ -1,5 +1,6 @@
 #include <kernel/arch/i386/idt.h>
 #include <kernel/arch/i386/pic.h>
+#include <kernel/drivers/keyboard.h>
 #include <kernel/drivers/pit.h>
 #include <kernel/drivers/serial.h>
 #include <kernel/drivers/vga.h>
@@ -307,11 +308,13 @@ void irq_handler(struct interrupt_frame* frame) {
   uint32_t irq = frame->interrupt_number - 32;
 
   /*
-   * IRQ0 is the programmable interval timer. Other IRQ lines are acknowledged
-   * for now but do not yet have device-specific handlers.
+   * IRQ0 is the programmable interval timer.
+   * IRQ1 is the PS/2 keyboard.
    */
   if (irq == 0) {
     pit_handle_interrupt();
+  } else if (irq == 1) {
+    keyboard_handle_interrupt();
   }
 
   pic_send_eoi((uint8_t)irq);

@@ -2,9 +2,9 @@
 #include <kernel/arch/i386/gdt.h>
 #include <kernel/arch/i386/idt.h>
 #include <kernel/arch/i386/pic.h>
+#include <kernel/core/test.h>
 #include <kernel/drivers/pit.h>
 #include <kernel/drivers/serial.h>
-#include <kernel/core/test.h>
 #include <kernel/drivers/vga.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -44,7 +44,8 @@ void kernel_main(void) {
 
   terminal_writestring("Initializing serial logging...\n");
 
-  /* Serial logging gives QEMU/host-side diagnostics even if VGA output fails. */
+  /* Serial logging gives QEMU/host-side diagnostics even if VGA output fails.
+   */
   serial_initialize();
 
   if (serial_is_initialized()) {
@@ -76,15 +77,18 @@ void kernel_main(void) {
   serial_writestring("[wigOSX] Stage 6: Initializing PIC...\n");
 
   /*
-   * Move hardware IRQs out of the CPU exception range, then enable only IRQ0
-   * because the PIT is the only hardware interrupt with a handler right now.
+   * Move hardware IRQs out of the CPU exception range, then enable:
+   * - IRQ0 for the PIT timer
+   * - IRQ1 for the PS/2 keyboard
    */
   pic_remap();
   pic_mask_all();
   pic_unmask_irq(0);
+  pic_unmask_irq(1);
 
   terminal_writestring("PIC initialized successfully.\n");
   serial_writestring("[wigOSX] Stage 6: PIC initialized.\n");
+  serial_writestring("[wigOSX] Stage 7: IRQ1 enabled.\n");
 
   terminal_writestring("Initializing PIT...\n");
   serial_writestring("[wigOSX] Stage 6: Initializing PIT at 100 Hz...\n");
@@ -111,8 +115,10 @@ void kernel_main(void) {
   // terminal_clear();
 
   // serial_writestring("[wigOSX] VGA visual tests completed.\n");
-  terminal_writestring("Welcome to wigOSX 0.006!\n");
+  terminal_writestring("Welcome to wigOSX 0.007!\n");
+  terminal_writestring("Keyboard input enabled. Type inside QEMU.\n");
 
+  serial_writestring("[wigOSX] Stage 7 running. Keyboard input enabled.\n");
   /* Sleep until interrupts arrive instead of burning CPU in a spin loop. */
   while (1) {
     cpu_halt();

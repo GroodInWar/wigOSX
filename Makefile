@@ -61,6 +61,7 @@ OBJS = \
 	$(OBJ_DIR)/arch/i386/cpu/io.o \
 	$(OBJ_DIR)/arch/i386/hardware/pic.o \
 	$(OBJ_DIR)/drivers/pit.o \
+	$(OBJ_DIR)/drivers/keyboard.o \
 	$(OBJ_DIR)/arch/i386/memory/gdt.o \
 	$(OBJ_DIR)/arch/i386/memory/gdt_flush.o \
 	$(OBJ_DIR)/arch/i386/interrupts/idt.o \
