@@ -2,6 +2,7 @@
 #include <kernel/arch/i386/gdt.h>
 #include <kernel/arch/i386/idt.h>
 #include <kernel/arch/i386/pic.h>
+#include <kernel/core/shell.h>
 #include <kernel/core/test.h>
 #include <kernel/drivers/pit.h>
 #include <kernel/drivers/serial.h>
@@ -115,10 +116,12 @@ void kernel_main(void) {
   // terminal_clear();
 
   // serial_writestring("[wigOSX] VGA visual tests completed.\n");
-  terminal_writestring("Welcome to wigOSX 0.007!\n");
-  terminal_writestring("Keyboard input enabled. Type inside QEMU.\n");
+  terminal_writestring("Welcome to wigOSX 0.008!\n");
+  terminal_writestring("Stage 8: Starting kernel shell...\n");
 
-  serial_writestring("[wigOSX] Stage 7 running. Keyboard input enabled.\n");
+  serial_writestring("[wigOSX] Stage 8: Starting kernel shell.\n");
+  shell_initialize();
+
   /* Sleep until interrupts arrive instead of burning CPU in a spin loop. */
   while (1) {
     cpu_halt();

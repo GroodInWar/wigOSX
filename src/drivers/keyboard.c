@@ -1,15 +1,15 @@
 #include <kernel/arch/i386/io.h>
+#include <kernel/core/shell.h>
 #include <kernel/drivers/keyboard.h>
 #include <kernel/drivers/serial.h>
-#include <kernel/drivers/vga.h>
 #include <stdint.h>
 
 /**
  * @file keyboard.c
  * @brief Minimal PS/2 keyboard driver for IRQ1.
  *
- * Stage 7 reads keyboard scancodes from the PS/2 data port and translates
- * a small set of Set 1 scancodes into ASCII characters.
+ * Stage 8 reads keyboard scancodes from the PS/2 data port, translates
+ * basic Set 1 scancodes into ASCII, and passes characters to the shell.
  *
  * This first version supports basic unshifted US QWERTY keys.
  * It ignores key-release events, Shift, Ctrl, Alt, Caps Lock, and extended
@@ -104,6 +104,6 @@ void keyboard_handle_interrupt(void) {
     return;
   }
 
-  terminal_putchar(ascii);
+  shell_handle_character(ascii);
   keyboard_log_ascii(ascii);
 }
