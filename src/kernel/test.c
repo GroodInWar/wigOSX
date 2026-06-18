@@ -133,7 +133,7 @@ static void test_backspace_at_line_start(void) {
 
   terminal_writestring("ABC\n\bZ\n");
 
-  print_expected("ABZ if backspace moves to the previous line.");
+  print_expected("Z should appear at the far right of the previous line.");
 }
 
 /**
@@ -179,7 +179,8 @@ static void test_line_wrapping(void) {
 
   terminal_putchar('\n');
 
-  print_expected("80 X characters should fill one row, then wrap to the next row.");
+  print_expected(
+      "80 X characters should fill one row, then wrap to the next row.");
 }
 
 /**
@@ -194,7 +195,8 @@ static void test_tab_near_end_of_line(void) {
 
   terminal_writestring("\tT\n");
 
-  print_expected("The T should not corrupt memory. It may wrap to the next line.");
+  print_expected(
+      "The T should not corrupt memory. It may wrap to the next line.");
 }
 
 /**
@@ -206,7 +208,8 @@ static void test_terminal_clear_function(void) {
   terminal_writestring("This text will disappear after terminal_clear().\n");
   terminal_clear();
 
-  terminal_writestring("terminal_clear() worked if this is near the top-left.\n");
+  terminal_writestring(
+      "terminal_clear() worked if this is near the top-left.\n");
 }
 
 /**

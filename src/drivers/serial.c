@@ -15,6 +15,11 @@
 static bool serial_initialized = false;
 
 /**
+ * @brief Maximum polling attempts before serial output gives up.
+ */
+#define SERIAL_TRANSMIT_TIMEOUT 100000
+
+/**
  * @brief Computes the length of a null-terminated string.
  *
  * @param str String to measure.
@@ -43,6 +48,25 @@ static bool serial_can_transmit(void) {
 }
 
 /**
+ * @brief Waits briefly for COM1 to become ready for transmission.
+ *
+ * @return true if COM1 became ready before the timeout, false otherwise.
+ */
+static bool serial_wait_can_transmit(void) {
+  uint32_t timeout = SERIAL_TRANSMIT_TIMEOUT;
+
+  while (!serial_can_transmit()) {
+    if (timeout == 0) {
+      return false;
+    }
+
+    timeout--;
+  }
+
+  return true;
+}
+
+/**
  * @brief Initializes COM1 for polling-based serial output.
  *
  * Initialize COM1 for polling-based serial output.
@@ -54,7 +78,9 @@ static bool serial_can_transmit(void) {
  * - 1 stop bit
  * - FIFO enabled
  */
-void serial_initialize(void) {
+bool serial_initialize(void) {
+  serial_initialized = false;
+
   /*
    * Disable serial interrupts. This driver uses polling for now, which keeps
    * early boot logging independent from the IDT/PIC setup.
@@ -80,12 +106,15 @@ void serial_initialize(void) {
    */
   outb(SERIAL_PORT_COM1 + 4, 0x0B);
 
+  if (!serial_wait_can_transmit()) {
+    return false;
+  }
+
   serial_initialized = true;
+  return true;
 }
 
-bool serial_is_initialized(void) {
-  return serial_initialized;
-}
+bool serial_is_initialized(void) { return serial_initialized; }
 
 void serial_putchar(char c) {
   if (!serial_initialized) {
@@ -95,13 +124,15 @@ void serial_putchar(char c) {
   /* Many serial terminals expect CRLF, so '\n' is expanded to "\r\n". */
   if (c == '\n') {
     serial_putchar('\r');
+
+    if (!serial_initialized) {
+      return;
+    }
   }
 
-  while (!serial_can_transmit()) {
-    /*
-     * Busy waiting is acceptable during early boot. Interrupt-driven serial
-     * output can replace this once the kernel has a scheduler or wait queues.
-     */
+  if (!serial_wait_can_transmit()) {
+    serial_initialized = false;
+    return;
   }
 
   outb(SERIAL_PORT_COM1, (uint8_t)c);

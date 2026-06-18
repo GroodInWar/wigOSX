@@ -8,7 +8,7 @@
 
 /**
  * @file shell.c
- * @brief Tiny Stage 8 kernel shell.
+ * @brief Tiny early kernel shell.
  *
  * The shell receives already-translated ASCII characters from the keyboard
  * driver. It stores one command line, echoes typed characters, and executes

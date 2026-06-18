@@ -17,8 +17,9 @@
 
 /**
  * @brief Initializes COM1 for serial output.
+ * @return true if COM1 appears ready for polling output, false otherwise.
  */
-void serial_initialize(void);
+bool serial_initialize(void);
 
 /**
  * @brief Reports whether the serial driver has been initialized.

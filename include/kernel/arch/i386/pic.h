@@ -1,6 +1,7 @@
 #ifndef KERNEL_PIC_H
 #define KERNEL_PIC_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /**
@@ -35,8 +36,9 @@ void pic_mask_all(void);
  * @brief Unmasks one IRQ line.
  *
  * @param irq IRQ number from 0 to 15.
+ * @return true if the IRQ was valid and unmasked, false otherwise.
  */
-void pic_unmask_irq(uint8_t irq);
+bool pic_unmask_irq(uint8_t irq);
 
 /**
  * @brief Sends End Of Interrupt to the PIC.

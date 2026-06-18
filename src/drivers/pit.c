@@ -27,6 +27,16 @@
 /** @brief Command bit selecting binary counter mode. */
 #define PIT_COMMAND_BINARY 0x00
 
+/** @brief Largest divisor that fits in the PIT channel reload register. */
+#define PIT_MAX_DIVISOR 65535
+
+/** @brief Lowest safe whole-number frequency supported by a 16-bit divisor. */
+#define PIT_MIN_FREQUENCY_HZ \
+  ((PIT_BASE_FREQUENCY + PIT_MAX_DIVISOR - 1) / PIT_MAX_DIVISOR)
+
+/** @brief Highest useful PIT frequency, using divisor 1. */
+#define PIT_MAX_FREQUENCY_HZ PIT_BASE_FREQUENCY
+
 /**
  * @brief Number of PIT interrupts handled since the last initialization.
  */
@@ -37,8 +47,17 @@ static uint32_t pit_ticks = 0;
  *
  * @param frequency_hz Desired interrupt frequency in hertz.
  */
-void pit_initialize(uint32_t frequency_hz) {
+bool pit_initialize(uint32_t frequency_hz) {
+  if (frequency_hz < PIT_MIN_FREQUENCY_HZ ||
+      frequency_hz > PIT_MAX_FREQUENCY_HZ) {
+    return false;
+  }
+
   uint32_t divisor = PIT_BASE_FREQUENCY / frequency_hz;
+
+  if (divisor == 0 || divisor > PIT_MAX_DIVISOR) {
+    return false;
+  }
 
   outb(PIT_COMMAND_PORT, PIT_COMMAND_CHANNEL0 | PIT_COMMAND_ACCESS_LOHI |
                              PIT_COMMAND_MODE3 | PIT_COMMAND_BINARY);
@@ -47,6 +66,7 @@ void pit_initialize(uint32_t frequency_hz) {
   outb(PIT_CHANNEL0_PORT, (divisor >> 8) & 0xFF);
 
   pit_ticks = 0;
+  return true;
 }
 
 /**

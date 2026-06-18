@@ -13,9 +13,12 @@
 .set ALIGN,    1<<0             /* align loaded modules on page boundaries */
 
 /**
- * @brief Multiboot flag requesting a memory map.
+ * @brief Multiboot flag requesting basic memory information.
+ *
+ * This requests mem_lower and mem_upper. A full memory map is only available
+ * if the bootloader provides one in the Multiboot information structure.
  */
-.set MEMINFO,  1<<1             /* provide memory map */
+.set MEMINFO,  1<<1             /* request basic memory information */
 
 /**
  * @brief Combined Multiboot flags used by the kernel header.
@@ -83,7 +86,10 @@ _start:
    */
 
   /* Enter the high-level kernel with the stack alignment expected by the ABI. */
+  push %ebx
+  push %eax
 	call kernel_main
+  add $8, %esp
 
   /* Halt forever if kernel_main() returns. */
 	cli

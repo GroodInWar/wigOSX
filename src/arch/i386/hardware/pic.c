@@ -78,34 +78,40 @@ void pic_mask_all(void) {
   outb(PIC_SLAVE_DATA, 0xFF);
 }
 
-/**
- * @brief Enables delivery for one IRQ line.
- *
- * @param irq IRQ number from 0 to 15.
- */
-void pic_unmask_irq(uint8_t irq) {
-  uint16_t port;
-  uint8_t value;
-
-  if (irq < 8) {
-    port = PIC_MASTER_DATA;
-  } else {
-    port = PIC_SLAVE_DATA;
-    irq -= 8;
+bool pic_unmask_irq(uint8_t irq) {
+  if (irq > 15) {
+    return false;
   }
 
-  value = inb(port);
-  value &= ~(1 << irq);
-  outb(port, value);
+  if (irq < 8) {
+    uint8_t value = inb(PIC_MASTER_DATA);
+    value &= ~(1 << irq);
+    outb(PIC_MASTER_DATA, value);
+    return true;
+  }
+
+  uint8_t slave_irq = irq - 8;
+
+  uint8_t slave_mask = inb(PIC_SLAVE_DATA);
+  slave_mask &= ~(1 << slave_irq);
+  outb(PIC_SLAVE_DATA, slave_mask);
+
+  /*
+   * The slave PIC is connected through IRQ2 on the master PIC.
+   * If IRQ2 stays masked, IRQ8-IRQ15 cannot reach the CPU.
+   */
+  uint8_t master_mask = inb(PIC_MASTER_DATA);
+  master_mask &= ~(1 << 2);
+  outb(PIC_MASTER_DATA, master_mask);
+
+  return true;
 }
 
-/**
- * @brief Acknowledges a completed interrupt to the PIC.
- *
- * Slave IRQs must be acknowledged on both controllers because they are routed
- * through the master's cascade line.
- */
 void pic_send_eoi(uint8_t irq) {
+  if (irq > 15) {
+    return;
+  }
+
   if (irq >= 8) {
     outb(PIC_SLAVE_COMMAND, PIC_COMMAND_EOI);
   }

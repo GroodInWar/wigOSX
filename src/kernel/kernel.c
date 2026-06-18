@@ -34,27 +34,50 @@
 #error "This kernel needs to be compiled with an i686-elf compiler"
 #endif
 
+#define MULTIBOOT_BOOTLOADER_MAGIC 0x2BADB002
+
+/**
+ * @brief Halts the CPU forever after a fatal early-kernel error.
+ */
+static void kernel_halt_forever(void) {
+  while (1) {
+    cpu_halt();
+  }
+}
+
 /**
  * @brief Main kernel entry point called from the boot assembly.
  *
- * Initializes visible terminal output, starts serial logging, initializes the
- * GDT and IDT, and runs the current VGA visual test suite.
+ * Validates early boot state, initializes visible terminal output, starts
+ * serial logging, initializes descriptor tables and hardware interrupts, then
+ * starts the kernel shell.
  */
-void kernel_main(void) {
+void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   /* Bring up VGA first so every later initialization step can report status. */
   terminal_initialize();
 
+  terminal_writestring("Checking Multiboot information...\n");
+
+  if (multiboot_magic != MULTIBOOT_BOOTLOADER_MAGIC) {
+    terminal_writestring("FATAL: invalid Multiboot magic.\n");
+    kernel_halt_forever();
+  }
+
+  if (multiboot_info_address == 0) {
+    terminal_writestring("FATAL: Multiboot info address is zero.\n");
+    kernel_halt_forever();
+  }
+
+  terminal_writestring("Multiboot information looks valid.\n");
+
   terminal_writestring("Initializing serial logging...\n");
 
-  /* Serial logging gives QEMU/host-side diagnostics even if VGA output fails.
-   */
-  serial_initialize();
-
-  if (serial_is_initialized()) {
+  if (serial_initialize()) {
     terminal_writestring("Serial logging initialized successfully.\n");
-    serial_writestring("[wigOSX] Stage 3: Serial Logging Initialized\n");
+    serial_writestring("[wigOSX] Stage 3: Serial logging initialized.\n");
   } else {
-    terminal_writestring("Serial logging failed to initialize.\n");
+    terminal_writestring(
+        "Serial logging unavailable; continuing without serial.\n");
   }
 
   terminal_writestring("Initializing GDT...\n");
@@ -85,8 +108,15 @@ void kernel_main(void) {
    */
   pic_remap();
   pic_mask_all();
-  pic_unmask_irq(0);
-  pic_unmask_irq(1);
+  if (!pic_unmask_irq(0)) {
+    terminal_writestring("FATAL: failed to unmask PIT IRQ0.\n");
+    kernel_halt_forever();
+  }
+
+  if (!pic_unmask_irq(1)) {
+    terminal_writestring("FATAL: failed to unmask keyboard IRQ1.\n");
+    kernel_halt_forever();
+  }
 
   terminal_writestring("PIC initialized successfully.\n");
   serial_writestring("[wigOSX] Stage 6: PIC initialized.\n");
@@ -97,7 +127,10 @@ void kernel_main(void) {
 
   /* Program the timer before allowing the PIC to deliver IRQ0 to the CPU. */
   pit_initialize(100);
-
+  if (!pit_initialize(100)) {
+    terminal_writestring("FATAL: PIT initialization failed.\n");
+    kernel_halt_forever();
+  }
   terminal_writestring("PIT initialized successfully.\n");
   serial_writestring("[wigOSX] Stage 6: PIT initialized at 100 Hz.\n");
 
