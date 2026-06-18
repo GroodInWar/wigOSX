@@ -111,7 +111,7 @@ static void shell_command_help(void) {
  * @brief Implements the version command.
  */
 static void shell_command_version(void) {
-  terminal_writestring("wigOSX 0.008\n");
+  terminal_writestring("wigOSX 0.009\n");
 }
 
 /**
@@ -127,9 +127,8 @@ static void shell_command_ticks(void) {
  * @brief Implements the about command.
  */
 static void shell_command_about(void) {
-  terminal_writestring("Stage 8: Tiny interactive kernel shell.\n");
-  terminal_writestring(
-      "Keyboard input now feeds commands instead of raw output.\n");
+  terminal_writestring("Stage 9: Keyboard modifier support.\n");
+  terminal_writestring("Shift and Caps Lock now affect shell input.\n");
 }
 
 /**

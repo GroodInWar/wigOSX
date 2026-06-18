@@ -116,10 +116,11 @@ void kernel_main(void) {
   // terminal_clear();
 
   // serial_writestring("[wigOSX] VGA visual tests completed.\n");
-  terminal_writestring("Welcome to wigOSX 0.008!\n");
-  terminal_writestring("Stage 8: Starting kernel shell...\n");
+  terminal_writestring("Welcome to wigOSX 0.009!\n");
+  terminal_writestring("Stage 9: Keyboard modifiers enabled.\n");
+  terminal_writestring("Starting kernel shell...\n");
 
-  serial_writestring("[wigOSX] Stage 8: Starting kernel shell.\n");
+  serial_writestring("[wigOSX] Stage 9: Keyboard modifiers enabled.\n");
   shell_initialize();
 
   /* Sleep until interrupts arrive instead of burning CPU in a spin loop. */
