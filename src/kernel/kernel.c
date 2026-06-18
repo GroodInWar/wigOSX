@@ -2,6 +2,7 @@
 #include <kernel/arch/i386/gdt.h>
 #include <kernel/arch/i386/idt.h>
 #include <kernel/arch/i386/pic.h>
+#include <kernel/core/kernel.h>
 #include <kernel/core/shell.h>
 #include <kernel/core/test.h>
 #include <kernel/drivers/pit.h>
@@ -116,11 +117,11 @@ void kernel_main(void) {
   // terminal_clear();
 
   // serial_writestring("[wigOSX] VGA visual tests completed.\n");
-  terminal_writestring("Welcome to wigOSX 0.009!\n");
-  terminal_writestring("Stage 9: Keyboard modifiers enabled.\n");
+  terminal_writestring("Welcome to wigOSX 0.010!\n");
+  terminal_writestring("Stage 10: VGA terminal scrolling enabled.\n");
   terminal_writestring("Starting kernel shell...\n");
 
-  serial_writestring("[wigOSX] Stage 9: Keyboard modifiers enabled.\n");
+  serial_writestring("[wigOSX] Stage 10: VGA terminal scrolling enabled.\n");
   shell_initialize();
 
   /* Sleep until interrupts arrive instead of burning CPU in a spin loop. */

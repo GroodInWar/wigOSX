@@ -9,22 +9,19 @@
 /**
  * @brief Enables maskable hardware interrupts.
  */
-static inline void cpu_enable_interrupts(void) {
-  __asm__ volatile("sti");
-}
+void cpu_enable_interrupts(void);
 
 /**
  * @brief Disables maskable hardware interrupts.
  */
-static inline void cpu_disable_interrupts(void) {
-  __asm__ volatile("cli");
-}
+void cpu_disable_interrupts(void);
 
 /**
  * @brief Halts the CPU until the next interrupt.
+ *
+ * If interrupts are enabled, execution resumes after an interrupt is
+ * delivered and handled.
  */
-static inline void cpu_halt(void) {
-  __asm__ volatile("hlt");
-}
+void cpu_halt(void);
 
 #endif /* KERNEL_CPU_H */

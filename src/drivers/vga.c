@@ -1,3 +1,4 @@
+#include <kernel/arch/i386/io.h>
 #include <kernel/drivers/vga.h>
 
 /**
@@ -19,6 +20,14 @@ static size_t terminal_row;
 static size_t terminal_column;
 
 /**
+ * @brief First visible VGA cell in the hardware viewport.
+ *
+ * This lets the terminal scroll by changing the VGA display start address
+ * instead of copying the whole visible screen.
+ */
+static size_t terminal_view_start;
+
+/**
  * @brief Active encoded VGA color byte.
  */
 static uint8_t terminal_color;
@@ -28,8 +37,46 @@ static uint8_t terminal_color;
  */
 static volatile uint16_t* terminal_buffer = (uint16_t*)VGA_MEMORY;
 
-uint8_t vga_entry_color(enum vga_color foreground, enum vga_color background) {
-  return foreground | background << 4;
+/**
+ * @brief Wraps a VGA text-memory cell index into the valid text buffer range.
+ *
+ * @param index Unbounded VGA text-cell index.
+ * @return Equivalent index within VGA text memory.
+ */
+static size_t terminal_wrap_index(size_t index) {
+  return index % VGA_TEXT_MEMORY_CELLS;
+}
+
+/**
+ * @brief Converts visible terminal coordinates into a physical VGA memory
+ * index.
+ *
+ * The visible screen begins at terminal_view_start. Scrolling changes that
+ * starting cell instead of copying the screen upward.
+ *
+ * @param row Visible zero-based terminal row.
+ * @param column Visible zero-based terminal column.
+ * @return Physical cell index within VGA text memory.
+ */
+static size_t terminal_get_buffer_index(size_t row, size_t column) {
+  return terminal_wrap_index(terminal_view_start + row * VGA_WIDTH + column);
+}
+
+/**
+ * @brief Programs the VGA CRTC start address.
+ *
+ * The address is measured in text cells, not bytes.
+ *
+ * @param cell_offset First text cell to display in the hardware viewport.
+ */
+static void terminal_set_hardware_view_start(size_t cell_offset) {
+  uint16_t address = (uint16_t)cell_offset;
+
+  outb(VGA_CRTC_INDEX_PORT, VGA_CRTC_START_ADDRESS_HIGH);
+  outb(VGA_CRTC_DATA_PORT, (address >> 8) & 0xFF);
+
+  outb(VGA_CRTC_INDEX_PORT, VGA_CRTC_START_ADDRESS_LOW);
+  outb(VGA_CRTC_DATA_PORT, address & 0xFF);
 }
 
 /**
@@ -39,12 +86,27 @@ uint8_t vga_entry_color(enum vga_color foreground, enum vga_color background) {
  * @param color Encoded VGA color byte.
  * @return Encoded 16-bit VGA text cell.
  *
- * Each VGA text cell is 2 bytes:
- * lower byte  = ASCII character
- * higher byte = color
+ * Each VGA text cell stores the character in the low byte and the color in
+ * the high byte.
  */
 static uint16_t vga_entry(unsigned char character, uint8_t color) {
   return (uint16_t)character | (uint16_t)color << 8;
+}
+
+uint8_t vga_entry_color(enum vga_color foreground, enum vga_color background) {
+  return foreground | background << 4;
+}
+
+/**
+ * @brief Clears one visible terminal row.
+ *
+ * @param row Visible zero-based row to clear.
+ */
+static void terminal_clear_row(size_t row) {
+  for (size_t x = 0; x < VGA_WIDTH; x++) {
+    size_t index = terminal_get_buffer_index(row, x);
+    terminal_buffer[index] = vga_entry(' ', terminal_color);
+  }
 }
 
 /**
@@ -64,11 +126,11 @@ static size_t terminal_strlen(const char* str) {
 }
 
 void terminal_clear(void) {
+  terminal_view_start = 0;
+  terminal_set_hardware_view_start(terminal_view_start);
+
   for (size_t y = 0; y < VGA_HEIGHT; y++) {
-    for (size_t x = 0; x < VGA_WIDTH; x++) {
-      size_t index = y * VGA_WIDTH + x;
-      terminal_buffer[index] = vga_entry(' ', terminal_color);
-    }
+    terminal_clear_row(y);
   }
 
   terminal_row = 0;
@@ -78,6 +140,7 @@ void terminal_clear(void) {
 void terminal_initialize(void) {
   terminal_row = 0;
   terminal_column = 0;
+  terminal_view_start = 0;
   terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
 
   terminal_clear();
@@ -86,19 +149,31 @@ void terminal_initialize(void) {
 void terminal_setcolor(uint8_t color) { terminal_color = color; }
 
 /**
+ * @brief Scrolls the terminal by moving the VGA hardware viewport.
+ *
+ * This avoids copying every visible row. The display start address moves down
+ * by one row, and only the new bottom row is cleared.
+ */
+static void terminal_scroll_up(void) {
+  terminal_view_start = terminal_wrap_index(terminal_view_start + VGA_WIDTH);
+  terminal_set_hardware_view_start(terminal_view_start);
+
+  terminal_clear_row(VGA_HEIGHT - 1);
+}
+
+/**
  * @brief Advances the cursor to the beginning of the next row.
  */
 static void terminal_newline(void) {
   terminal_column = 0;
-  terminal_row++;
 
-  /*
-   * Simple Stage 2 behavior: if we reach the bottom, wrap back to the top.
-   * Later, this can be replaced with real scrolling.
-   */
-  if (terminal_row >= VGA_HEIGHT) {
-    terminal_row = 0;
+  if (terminal_row + 1 >= VGA_HEIGHT) {
+    terminal_scroll_up();
+    terminal_row = VGA_HEIGHT - 1;
+    return;
   }
+
+  terminal_row++;
 }
 
 /**
@@ -129,7 +204,7 @@ static void terminal_backspace(void) {
     return;
   }
 
-  size_t index = terminal_row * VGA_WIDTH + terminal_column;
+  size_t index = terminal_get_buffer_index(terminal_row, terminal_column);
   terminal_buffer[index] = vga_entry(' ', terminal_color);
 }
 
@@ -159,7 +234,7 @@ void terminal_putchar(char c) {
       break;
   }
 
-  size_t index = terminal_row * VGA_WIDTH + terminal_column;
+  size_t index = terminal_get_buffer_index(terminal_row, terminal_column);
   terminal_buffer[index] = vga_entry(c, terminal_color);
 
   terminal_column++;

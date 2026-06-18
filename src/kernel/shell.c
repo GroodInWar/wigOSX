@@ -105,13 +105,14 @@ static void shell_command_help(void) {
   terminal_writestring("  version  - show kernel version\n");
   terminal_writestring("  ticks    - show PIT tick count\n");
   terminal_writestring("  about    - describe the current stage\n");
+  terminal_writestring("  scroll   - print lines to test terminal scrolling\n");
 }
 
 /**
  * @brief Implements the version command.
  */
 static void shell_command_version(void) {
-  terminal_writestring("wigOSX 0.009\n");
+  terminal_writestring("wigOSX 0.010\n");
 }
 
 /**
@@ -127,8 +128,20 @@ static void shell_command_ticks(void) {
  * @brief Implements the about command.
  */
 static void shell_command_about(void) {
-  terminal_writestring("Stage 9: Keyboard modifier support.\n");
-  terminal_writestring("Shift and Caps Lock now affect shell input.\n");
+  terminal_writestring("Stage 10: VGA terminal scrolling.\n");
+  terminal_writestring(
+      "The terminal now scrolls instead of wrapping to the top.\n");
+}
+
+/**
+ * @brief Prints enough lines to test terminal scrolling.
+ */
+static void shell_command_scrolltest(void) {
+  for (uint32_t i = 0; i < 40; i++) {
+    terminal_writestring("scroll test line ");
+    shell_print_uint32(i);
+    terminal_putchar('\n');
+  }
 }
 
 /**
@@ -151,6 +164,8 @@ static void shell_execute_command(const char* command) {
     shell_command_ticks();
   } else if (shell_strings_equal(command, "about")) {
     shell_command_about();
+  } else if (shell_strings_equal(command, "scroll")) {
+    shell_command_scrolltest();
   } else {
     terminal_writestring("Unknown command: ");
     terminal_writestring(command);

@@ -1,3 +1,4 @@
+#include <kernel/arch/i386/io.h>
 #include <kernel/drivers/serial.h>
 
 /**
@@ -14,40 +15,12 @@
 static bool serial_initialized = false;
 
 /**
- * @brief Writes one byte to an x86 I/O port.
- *
- * @param port I/O port address.
- * @param value Byte to write.
- *
- * Write one byte to an x86 I/O port.
- *
- * Security note:
- * Raw port I/O is powerful and dangerous.
- * We keep it private inside this driver instead of exposing it to kernel.c.
- */
-static inline void outb(uint16_t port, uint8_t value) {
-  __asm__ volatile("outb %0, %1" : : "a"(value), "Nd"(port));
-}
-
-/**
- * @brief Reads one byte from an x86 I/O port.
- *
- * @param port I/O port address.
- * @return Byte read from the port.
- */
-static inline uint8_t inb(uint16_t port) {
-  uint8_t value;
-  __asm__ volatile("inb %1, %0" : "=a"(value) : "Nd"(port));
-  return value;
-}
-
-/**
  * @brief Computes the length of a null-terminated string.
  *
  * @param str String to measure.
  * @return Number of bytes before the null terminator.
  */
-static size_t serial_strlen(const char *str) {
+static size_t serial_strlen(const char* str) {
   size_t length = 0;
 
   while (str[length] != '\0') {
@@ -134,12 +107,12 @@ void serial_putchar(char c) {
   outb(SERIAL_PORT_COM1, (uint8_t)c);
 }
 
-void serial_write(const char *data, size_t size) {
+void serial_write(const char* data, size_t size) {
   for (size_t i = 0; i < size; i++) {
     serial_putchar(data[i]);
   }
 }
 
-void serial_writestring(const char *data) {
+void serial_writestring(const char* data) {
   serial_write(data, serial_strlen(data));
 }

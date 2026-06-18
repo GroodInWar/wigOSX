@@ -33,4 +33,27 @@
  */
 void idt_initialize(void);
 
+/**
+ * @brief Saved CPU state passed to the common interrupt handlers.
+ *
+ * The structure layout is private to the IDT implementation. Public
+ * declarations only need this incomplete type because handlers receive it by
+ * pointer.
+ */
+struct interrupt_frame;
+
+/**
+ * @brief Handles a CPU exception dispatched by an assembly ISR stub.
+ *
+ * @param frame Saved CPU state for the interrupted context.
+ */
+void isr_handler(struct interrupt_frame* frame);
+
+/**
+ * @brief Handles a hardware interrupt dispatched by an assembly IRQ stub.
+ *
+ * @param frame Saved CPU state for the interrupted context.
+ */
+void irq_handler(struct interrupt_frame* frame);
+
 #endif /* KERNEL_IDT_H */

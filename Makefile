@@ -59,6 +59,7 @@ OBJS = \
 	$(OBJ_DIR)/kernel/shell.o \
 	$(OBJ_DIR)/drivers/vga.o \
 	$(OBJ_DIR)/drivers/serial.o \
+	$(OBJ_DIR)/arch/i386/cpu/cpu.o \
 	$(OBJ_DIR)/arch/i386/cpu/io.o \
 	$(OBJ_DIR)/arch/i386/hardware/pic.o \
 	$(OBJ_DIR)/drivers/pit.o \

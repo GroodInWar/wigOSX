@@ -39,14 +39,19 @@ void serial_putchar(char c);
  *
  * @param data Pointer to the bytes to write.
  * @param size Number of bytes to write.
+ *
+ * The byte range does not need to be null-terminated. @p data must point to at
+ * least @p size readable bytes.
  */
-void serial_write(const char *data, size_t size);
+void serial_write(const char* data, size_t size);
 
 /**
  * @brief Writes a null-terminated string to COM1.
  *
  * @param data Null-terminated string to write.
+ *
+ * @p data must not be NULL.
  */
-void serial_writestring(const char *data);
+void serial_writestring(const char* data);
 
 #endif /* KERNEL_SERIAL_H */
