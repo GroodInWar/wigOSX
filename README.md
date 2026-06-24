@@ -87,7 +87,9 @@ Useful commands include:
 help
 version
 ticks
+mem
 about
 scroll
 ```
-The `scroll` command prints enough lines to verify VGA terminal scrolling.
+The `scroll` command prints enough lines to verify VGA terminal scrolling. \
+The `mem` command prints the Multiboot memory summary detected during Stage 11.

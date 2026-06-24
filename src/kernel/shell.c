@@ -1,3 +1,4 @@
+#include <kernel/core/memory.h>
 #include <kernel/core/shell.h>
 #include <kernel/drivers/pit.h>
 #include <kernel/drivers/serial.h>
@@ -104,6 +105,7 @@ static void shell_command_help(void) {
   terminal_writestring("  clear    - clear the screen\n");
   terminal_writestring("  version  - show kernel version\n");
   terminal_writestring("  ticks    - show PIT tick count\n");
+  terminal_writestring("  mem      - show detected memory summary\n");
   terminal_writestring("  about    - describe the current stage\n");
   terminal_writestring("  scroll   - print lines to test terminal scrolling\n");
 }
@@ -112,7 +114,7 @@ static void shell_command_help(void) {
  * @brief Implements the version command.
  */
 static void shell_command_version(void) {
-  terminal_writestring("wigOSX 0.010\n");
+  terminal_writestring("wigOSX 0.011\n");
 }
 
 /**
@@ -128,9 +130,9 @@ static void shell_command_ticks(void) {
  * @brief Implements the about command.
  */
 static void shell_command_about(void) {
-  terminal_writestring("Stage 10: VGA terminal scrolling.\n");
+  terminal_writestring("Stage 11: Multiboot memory detection.\n");
   terminal_writestring(
-      "The terminal now scrolls instead of wrapping to the top.\n");
+      "The kernel now reads memory information provided by GRUB.\n");
 }
 
 /**
@@ -162,6 +164,8 @@ static void shell_execute_command(const char* command) {
     shell_command_version();
   } else if (shell_strings_equal(command, "ticks")) {
     shell_command_ticks();
+  } else if(shell_strings_equal(command, "mem")) {
+    memory_print_summary();
   } else if (shell_strings_equal(command, "about")) {
     shell_command_about();
   } else if (shell_strings_equal(command, "scroll")) {

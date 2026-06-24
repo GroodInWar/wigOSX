@@ -56,6 +56,7 @@ LDFLAGS = -T $(LINKER_SCRIPT) -ffreestanding -O2 -nostdlib
 OBJS = \
 	$(OBJ_DIR)/boot/multiboot.o \
 	$(OBJ_DIR)/kernel/kernel.o \
+	$(OBJ_DIR)/kernel/memory.o \
 	$(OBJ_DIR)/kernel/shell.o \
 	$(OBJ_DIR)/drivers/vga.o \
 	$(OBJ_DIR)/drivers/serial.o \

@@ -3,6 +3,7 @@
 #include <kernel/arch/i386/idt.h>
 #include <kernel/arch/i386/pic.h>
 #include <kernel/core/kernel.h>
+#include <kernel/core/memory.h>
 #include <kernel/core/shell.h>
 #include <kernel/core/test.h>
 #include <kernel/drivers/pit.h>
@@ -80,6 +81,15 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
         "Serial logging unavailable; continuing without serial.\n");
   }
 
+  terminal_writestring("Initializing memory detection...\n");
+  serial_writestring("[wigOSX] Stage 11: Initializing memory detection...\n");
+
+  memory_initialize(multiboot_info_address);
+  memory_print_summary();
+
+  terminal_writestring("Memory detection initialized successfully.\n");
+  serial_writestring("[wigOSX] Stage 11: Memory detection initialized.\n");
+
   terminal_writestring("Initializing GDT...\n");
   serial_writestring("[wigOSX] Stage 4: Initializing GDT...\n");
 
@@ -126,7 +136,6 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   serial_writestring("[wigOSX] Stage 6: Initializing PIT at 100 Hz...\n");
 
   /* Program the timer before allowing the PIC to deliver IRQ0 to the CPU. */
-  pit_initialize(100);
   if (!pit_initialize(100)) {
     terminal_writestring("FATAL: PIT initialization failed.\n");
     kernel_halt_forever();
@@ -150,11 +159,12 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   // terminal_clear();
 
   // serial_writestring("[wigOSX] VGA visual tests completed.\n");
-  terminal_writestring("Welcome to wigOSX 0.010!\n");
-  terminal_writestring("Stage 10: VGA terminal scrolling enabled.\n");
+  terminal_writestring("Welcome to wigOSX 0.011!\n");
+  terminal_writestring("Stage 11: Multiboot memory detection enabled.\n");
   terminal_writestring("Starting kernel shell...\n");
 
-  serial_writestring("[wigOSX] Stage 10: VGA terminal scrolling enabled.\n");
+  serial_writestring(
+      "[wigOSX] Stage 11: Multiboot memory detection enabled.\n");
   shell_initialize();
 
   /* Sleep until interrupts arrive instead of burning CPU in a spin loop. */
