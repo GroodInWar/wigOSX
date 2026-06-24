@@ -1,5 +1,6 @@
 #include <kernel/core/memory.h>
 #include <kernel/core/shell.h>
+#include <kernel/core/version.h>
 #include <kernel/drivers/pit.h>
 #include <kernel/drivers/serial.h>
 #include <kernel/drivers/vga.h>
@@ -114,7 +115,9 @@ static void shell_command_help(void) {
  * @brief Implements the version command.
  */
 static void shell_command_version(void) {
-  terminal_writestring("wigOSX 0.011\n");
+  terminal_writestring("wigOSX ");
+  terminal_writestring(WIGOSX_VERSION_STRING);
+  terminal_putchar('\n');
 }
 
 /**
@@ -130,9 +133,10 @@ static void shell_command_ticks(void) {
  * @brief Implements the about command.
  */
 static void shell_command_about(void) {
-  terminal_writestring("Stage 11: Multiboot memory detection.\n");
+  terminal_writestring(WIGOSX_STAGE_LABEL);
+  terminal_writestring(".\n");
   terminal_writestring(
-      "The kernel now reads memory information provided by GRUB.\n");
+      "The kernel now stores a bootloader-independent memory map.\n");
 }
 
 /**
@@ -164,7 +168,7 @@ static void shell_execute_command(const char* command) {
     shell_command_version();
   } else if (shell_strings_equal(command, "ticks")) {
     shell_command_ticks();
-  } else if(shell_strings_equal(command, "mem")) {
+  } else if (shell_strings_equal(command, "mem")) {
     memory_print_summary();
   } else if (shell_strings_equal(command, "about")) {
     shell_command_about();

@@ -91,5 +91,6 @@ mem
 about
 scroll
 ```
-The `scroll` command prints enough lines to verify VGA terminal scrolling. \
-The `mem` command prints the Multiboot memory summary detected during Stage 11.
+`version`  -> wigOSX 0.012 \
+`about`    -> Stage 12: Normalized kernel memory map. \
+`mem`      -> Prints usable/reserved regions and total usable/reserved memory.

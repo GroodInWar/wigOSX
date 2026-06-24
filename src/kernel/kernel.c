@@ -6,6 +6,7 @@
 #include <kernel/core/memory.h>
 #include <kernel/core/shell.h>
 #include <kernel/core/test.h>
+#include <kernel/core/version.h>
 #include <kernel/drivers/pit.h>
 #include <kernel/drivers/serial.h>
 #include <kernel/drivers/vga.h>
@@ -81,14 +82,15 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
         "Serial logging unavailable; continuing without serial.\n");
   }
 
-  terminal_writestring("Initializing memory detection...\n");
-  serial_writestring("[wigOSX] Stage 11: Initializing memory detection...\n");
+  terminal_writestring("Initializing memory map normalization...\n");
+  serial_writestring(
+      "[wigOSX] Stage 12: Initializing memory map normalization...\n");
 
   memory_initialize(multiboot_info_address);
   memory_print_summary();
 
-  terminal_writestring("Memory detection initialized successfully.\n");
-  serial_writestring("[wigOSX] Stage 11: Memory detection initialized.\n");
+  terminal_writestring("Memory map normalized successfully.\n");
+  serial_writestring("[wigOSX] Stage 12: Memory map normalized.\n");
 
   terminal_writestring("Initializing GDT...\n");
   serial_writestring("[wigOSX] Stage 4: Initializing GDT...\n");
@@ -148,24 +150,17 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   terminal_writestring("Hardware interrupts enabled.\n");
   serial_writestring("[wigOSX] Interrupts enabled.\n");
 
-  /*
-   * The VGA visual suite is useful during terminal-driver work. It is left
-   * here as an easy manual test hook without running on every boot.
-   */
-  // terminal_writestring("Running VGA visual tests...\n");
-  // serial_writestring("[wigOSX] Running VGA visual tests...\n");
+  terminal_writestring("Welcome to wigOSX ");
+  terminal_writestring(WIGOSX_VERSION_STRING);
+  terminal_writestring("!\n");
 
-  // run_vga_tests();
-  // terminal_clear();
-
-  // serial_writestring("[wigOSX] VGA visual tests completed.\n");
-  terminal_writestring("Welcome to wigOSX 0.011!\n");
-  terminal_writestring("Stage 11: Multiboot memory detection enabled.\n");
+  terminal_writestring(WIGOSX_STAGE_LABEL);
+  terminal_writestring(" enabled.\n");
   terminal_writestring("Starting kernel shell...\n");
 
-  serial_writestring(
-      "[wigOSX] Stage 11: Multiboot memory detection enabled.\n");
-  shell_initialize();
+  serial_writestring("[wigOSX] ");
+  serial_writestring(WIGOSX_STAGE_LABEL);
+  serial_writestring(" enabled.\n");
 
   /* Sleep until interrupts arrive instead of burning CPU in a spin loop. */
   while (1) {
