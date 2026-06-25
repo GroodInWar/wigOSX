@@ -10,10 +10,10 @@
  * across multiple files.
  */
 
-#define WIGOSX_VERSION_STRING "0.012"
+#define WIGOSX_VERSION_STRING "0.013"
 
-#define WIGOSX_STAGE_NUMBER_STRING "12"
-#define WIGOSX_STAGE_NAME "Normalized kernel memory map"
+#define WIGOSX_STAGE_NUMBER_STRING "13"
+#define WIGOSX_STAGE_NAME "Bitmap physical memory manager"
 
 #define WIGOSX_STAGE_LABEL \
   "Stage " WIGOSX_STAGE_NUMBER_STRING ": " WIGOSX_STAGE_NAME

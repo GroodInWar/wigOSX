@@ -7,8 +7,8 @@
  * @file multiboot.h
  * @brief Minimal Multiboot information structures used by wigOSX.
  *
- * Stage 11 only reads memory-related boot information. The kernel should check
- * the matching flag before reading any optional Multiboot field.
+ * The kernel currently reads memory-related boot information. The kernel should
+ * check the matching flag before reading any optional Multiboot field.
  */
 
 /** @brief mem_lower and mem_upper are valid. */

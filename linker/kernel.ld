@@ -24,6 +24,8 @@ SECTIONS
    */
   . = 2M;
 
+  _kernel_start = .;
+
   /* Executable code and the Multiboot header. */
   .text BLOCK(4K) : ALIGN(4K) 
   {
@@ -49,6 +51,9 @@ SECTIONS
     *(COMMON)
     *(.bss)
   }
+
+  . = ALIGN(4K);
+  _kernel_end = .;
 
   /*
    * Additional compiler-generated sections can be added here as needed.

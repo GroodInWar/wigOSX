@@ -10,7 +10,7 @@ AS = i686-elf-as
 ## @brief Root directory for kernel source files.
 SRC_DIR = src
 
-## @brief Directory containing the Multiboot entry assembly.
+## @brief Directory containing boot inputs and the Multiboot entry assembly.
 BOOT_DIR = boot
 
 ## @brief Directory containing public kernel headers.
@@ -19,11 +19,11 @@ INCLUDE_DIR = include
 ## @brief Directory containing linker scripts.
 LINKER_DIR = linker
 
-## @brief Directory containing the bootable ISO filesystem layout.
-ISO_ROOT = iso_root
-
 ## @brief Directory for generated object files and final images.
 BUILD_DIR = build
+
+## @brief Directory for the generated bootable ISO filesystem staging area.
+ISO_ROOT = $(BUILD_DIR)/iso_root
 
 ## @brief Directory for generated object files.
 OBJ_DIR = $(BUILD_DIR)/objects
@@ -43,6 +43,9 @@ KERNEL_BIN = $(KERNEL_BUILD_DIR)/wigOSX.bin
 ## @brief Bootable ISO output path.
 ISO_BIN = $(ISO_BUILD_DIR)/wigOSX.iso
 
+## @brief GRUB menu configuration copied into the generated ISO staging area.
+GRUB_CFG = $(BOOT_DIR)/grub/grub.cfg
+
 ## @brief Compiler flags for freestanding kernel C sources.
 CFLAGS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INCLUDE_DIR)
 
@@ -57,6 +60,7 @@ OBJS = \
 	$(OBJ_DIR)/boot/multiboot.o \
 	$(OBJ_DIR)/kernel/kernel.o \
 	$(OBJ_DIR)/kernel/memory.o \
+	$(OBJ_DIR)/mm/pmm.o \
 	$(OBJ_DIR)/kernel/shell.o \
 	$(OBJ_DIR)/drivers/vga.o \
 	$(OBJ_DIR)/drivers/serial.o \
@@ -80,6 +84,11 @@ all: $(ISO_BIN)
 
 ## @brief Compiles generic kernel C sources.
 $(OBJ_DIR)/kernel/%.o: $(SRC_DIR)/kernel/%.c
+	mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(DEPFLAGS) -c $< -o $@
+
+## @brief Compiles generic memory-management C sources.
+$(OBJ_DIR)/mm/%.o: $(SRC_DIR)/mm/%.c
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(DEPFLAGS) -c $< -o $@
 
@@ -128,9 +137,11 @@ $(KERNEL_BIN): $(OBJS) $(LINKER_SCRIPT)
 	mkdir -p $(dir $@)
 	$(CC) $(LDFLAGS) -o $(KERNEL_BIN) $(OBJS) -lgcc
 
-## @brief Copies the kernel into the ISO root and creates a bootable ISO.
-$(ISO_BIN): $(KERNEL_BIN) $(ISO_ROOT)/boot/grub/grub.cfg
-	mkdir -p $(ISO_ROOT)/boot $(dir $@)
+## @brief Stages GRUB inputs and the kernel binary, then creates a bootable ISO.
+$(ISO_BIN): $(KERNEL_BIN) $(GRUB_CFG)
+	rm -rf $(ISO_ROOT)
+	mkdir -p $(ISO_ROOT)/boot/grub $(dir $@)
+	cp $(GRUB_CFG) $(ISO_ROOT)/boot/grub/grub.cfg
 	cp $(KERNEL_BIN) $(ISO_ROOT)/boot/wigOSX.bin
 	grub-mkrescue -o $(ISO_BIN) $(ISO_ROOT)
 
@@ -141,6 +152,5 @@ run: $(ISO_BIN)
 ## @brief Removes generated build outputs.
 clean:
 	rm -rf $(BUILD_DIR)
-	rm -f $(ISO_ROOT)/boot/wigOSX.bin
 
 -include $(DEPS)

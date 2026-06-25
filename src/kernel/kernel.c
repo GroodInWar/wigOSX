@@ -4,6 +4,7 @@
 #include <kernel/arch/i386/pic.h>
 #include <kernel/core/kernel.h>
 #include <kernel/core/memory.h>
+#include <kernel/mm/pmm.h>
 #include <kernel/core/shell.h>
 #include <kernel/core/test.h>
 #include <kernel/core/version.h>
@@ -58,22 +59,20 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   /* Bring up VGA first so every later initialization step can report status. */
   terminal_initialize();
 
+  // Multiboot
   terminal_writestring("Checking Multiboot information...\n");
-
   if (multiboot_magic != MULTIBOOT_BOOTLOADER_MAGIC) {
     terminal_writestring("FATAL: invalid Multiboot magic.\n");
     kernel_halt_forever();
   }
-
   if (multiboot_info_address == 0) {
     terminal_writestring("FATAL: Multiboot info address is zero.\n");
     kernel_halt_forever();
   }
-
   terminal_writestring("Multiboot information looks valid.\n");
 
+  // Serial Logging
   terminal_writestring("Initializing serial logging...\n");
-
   if (serial_initialize()) {
     terminal_writestring("Serial logging initialized successfully.\n");
     serial_writestring("[wigOSX] Stage 3: Serial logging initialized.\n");
@@ -82,6 +81,7 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
         "Serial logging unavailable; continuing without serial.\n");
   }
 
+  // Memory Map
   terminal_writestring("Initializing memory map normalization...\n");
   serial_writestring(
       "[wigOSX] Stage 12: Initializing memory map normalization...\n");
@@ -92,6 +92,17 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   terminal_writestring("Memory map normalized successfully.\n");
   serial_writestring("[wigOSX] Stage 12: Memory map normalized.\n");
 
+  // PMM
+  terminal_writestring("Initializing physical memory manager...\n");
+  serial_writestring("[wigOSX] Stage 13: Initializing bitmap PMM...\n");
+
+  pmm_initialize(multiboot_info_address);
+  pmm_print_summary();
+
+  terminal_writestring("Physical memory manager initialized successfully.\n");
+  serial_writestring("[wigOSX] Stage 13: Bitmap PMM initialized.\n");
+
+  // GDT
   terminal_writestring("Initializing GDT...\n");
   serial_writestring("[wigOSX] Stage 4: Initializing GDT...\n");
 
@@ -101,6 +112,7 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   terminal_writestring("GDT initialized successfully.\n");
   serial_writestring("[wigOSX] Stage 4: GDT initialized successfully.\n");
 
+  // IDT
   terminal_writestring("Initializing IDT...\n");
   serial_writestring("[wigOSX] Stage 5: Initializing IDT...\n");
 
@@ -110,6 +122,7 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   terminal_writestring("IDT initialized successfully.\n");
   serial_writestring("[wigOSX] Stage 5: IDT initialized successfully.\n");
 
+  // PIC
   terminal_writestring("Initializing PIC...\n");
   serial_writestring("[wigOSX] Stage 6: Initializing PIC...\n");
 
@@ -134,6 +147,7 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   serial_writestring("[wigOSX] Stage 6: PIC initialized.\n");
   serial_writestring("[wigOSX] Stage 7: IRQ1 enabled.\n");
 
+  // PIT
   terminal_writestring("Initializing PIT...\n");
   serial_writestring("[wigOSX] Stage 6: Initializing PIT at 100 Hz...\n");
 
@@ -145,6 +159,7 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   terminal_writestring("PIT initialized successfully.\n");
   serial_writestring("[wigOSX] Stage 6: PIT initialized at 100 Hz.\n");
 
+  // CPU Interrupts
   cpu_enable_interrupts();
 
   terminal_writestring("Hardware interrupts enabled.\n");
@@ -158,6 +173,7 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   terminal_writestring(" enabled.\n");
   terminal_writestring("Starting kernel shell...\n");
 
+  // Shell 
   shell_initialize();
 
   serial_writestring("[wigOSX] ");

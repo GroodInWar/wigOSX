@@ -13,12 +13,11 @@ inputs, and generated artifacts are easy to tell apart.
 
 ```text
 .
-├── boot/                 # Multiboot entry assembly
+├── boot/                 # Multiboot entry assembly and GRUB config
 ├── include/kernel/       # Public kernel headers
 │   ├── arch/i386/        # i386 CPU, GDT, IDT, I/O, and PIC headers
 │   ├── core/             # Generic kernel interfaces
 │   └── drivers/          # Driver interfaces
-├── iso_root/             # Files copied into the bootable ISO image
 ├── linker/               # Linker scripts
 ├── src/
 │   ├── arch/i386/        # i386-specific implementation code
@@ -28,7 +27,7 @@ inputs, and generated artifacts are easy to tell apart.
 │   │   └── memory/
 │   ├── drivers/          # Device drivers
 │   └── kernel/           # Generic kernel entry and tests
-└── build/                # Generated objects, kernel binary, and ISO
+└── build/                # Generated objects, ISO staging, kernel binary, and ISO
 ```
 
 ## Prerequisites
@@ -52,8 +51,9 @@ source.
 make
 ```
 
-The build output is generated under `build/`, and the temporary kernel copy
-used by GRUB is generated at `iso_root/boot/wigOSX.bin`.
+The build output is generated under `build/`. The temporary ISO filesystem is
+staged under `build/iso_root/`, including `build/iso_root/boot/wigOSX.bin` and
+a copied `build/iso_root/boot/grub/grub.cfg`.
 
 ## Run 
 ```sh
@@ -73,8 +73,7 @@ Serial logs are printed to the terminal running QEMU.
 make clean
 ```
 
-This removes generated build outputs and the temporary kernel copy in the ISO
-root.
+This removes generated build outputs, including the temporary ISO staging root.
 
 ## Manual Testing
 After booting, the kernel shell should appear:
