@@ -158,6 +158,8 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   terminal_writestring(" enabled.\n");
   terminal_writestring("Starting kernel shell...\n");
 
+  shell_initialize();
+
   serial_writestring("[wigOSX] ");
   serial_writestring(WIGOSX_STAGE_LABEL);
   serial_writestring(" enabled.\n");
