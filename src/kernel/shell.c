@@ -112,7 +112,7 @@ static void shell_command_help(void) {
   terminal_writestring("  pmm      - show physical memory manager summary\n");
   terminal_writestring(
       "  pmm_test - run a basic PMM allocation/free self-test\n");
-  terminal_writestring("  paging   - show virtual memory paging summary\n");
+  terminal_writestring("  paging   - show paging and identity-map summary\n");
   terminal_writestring("  about    - describe the current stage\n");
   terminal_writestring("  scroll   - print lines to test terminal scrolling\n");
 }
@@ -142,7 +142,9 @@ static void shell_command_about(void) {
   terminal_writestring(WIGOSX_STAGE_LABEL);
   terminal_writestring(".\n");
   terminal_writestring(
-      "The kernel now tracks physical 4 KiB frames with a bitmap PMM.\n");
+      "The kernel now enables identity paging through the VMM.\n");
+  terminal_writestring(
+      "The first 16 MiB are identity mapped for early kernel simplicity.\n");
 }
 
 /**

@@ -96,8 +96,8 @@ paging
 about
 scroll
 ```
-`version`  -> wigOSX 0.013.1
-`about`    -> Stage 13.1: PMM cleanup and safety validation.
+`version`  -> wigOSX 0.014.1
+`about`    -> Stage 14.1: Early identity paging foundation.
 `mem`      -> Prints usable/reserved regions and total usable/reserved memory.
 `pmm`      -> Prints physical frame counts.
 `pmm_test`  -> Runs a basic allocate/free PMM test.
