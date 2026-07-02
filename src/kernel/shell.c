@@ -1,3 +1,4 @@
+#include <kernel/core/format.h>
 #include <kernel/core/memory.h>
 #include <kernel/core/shell.h>
 #include <kernel/core/version.h>
@@ -79,23 +80,10 @@ static bool shell_command_is_empty(const char* command) {
  * integer formatting into a shared kernel string/stdio helper.
  */
 static void shell_print_uint32(uint32_t value) {
-  char digits[10];
-  size_t digit_count = 0;
+  char buffer[11];
 
-  if (value == 0) {
-    terminal_putchar('0');
-    return;
-  }
-
-  while (value > 0) {
-    digits[digit_count] = '0' + (value % 10);
-    value = value / 10;
-    digit_count++;
-  }
-
-  while (digit_count > 0) {
-    digit_count--;
-    terminal_putchar(digits[digit_count]);
+  if (kformat_uint32_decimal(value, buffer, sizeof(buffer))) {
+    terminal_writestring(buffer);
   }
 }
 

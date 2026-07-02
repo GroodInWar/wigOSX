@@ -60,6 +60,8 @@ OBJS = \
 	$(OBJ_DIR)/boot/multiboot.o \
 	$(OBJ_DIR)/kernel/kernel.o \
 	$(OBJ_DIR)/kernel/memory.o \
+	$(OBJ_DIR)/kernel/format.o \
+	$(OBJ_DIR)/kernel/log.o \
 	$(OBJ_DIR)/mm/pmm.o \
 	$(OBJ_DIR)/mm/vmm.o \
 	$(OBJ_DIR)/kernel/shell.o \

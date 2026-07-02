@@ -1,8 +1,7 @@
 #include <kernel/boot/multiboot.h>
+#include <kernel/core/log.h>
 #include <kernel/core/memory.h>
 #include <kernel/core/version.h>
-#include <kernel/drivers/serial.h>
-#include <kernel/drivers/vga.h>
 #include <kernel/mm/pmm.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -83,43 +82,6 @@ static void pmm_mark_frame_unallocated(uint32_t frame_index) {
 
   pmm_allocated_bitmap[pmm_bitmap_word_index(frame_index)] &=
       ~pmm_bitmap_bit_mask(frame_index);
-}
-
-static void pmm_putchar(char c) {
-  terminal_putchar(c);
-
-  if (serial_is_initialized()) {
-    serial_putchar(c);
-  }
-}
-
-static void pmm_writestring(const char* text) {
-  terminal_writestring(text);
-
-  if (serial_is_initialized()) {
-    serial_writestring(text);
-  }
-}
-
-static void pmm_print_uint32(uint32_t value) {
-  char digits[10];
-  size_t digit_count = 0;
-
-  if (value == 0) {
-    pmm_putchar('0');
-    return;
-  }
-
-  while (value > 0) {
-    digits[digit_count] = '0' + (value % 10);
-    value = value / 10;
-    digit_count++;
-  }
-
-  while (digit_count > 0) {
-    digit_count--;
-    pmm_putchar(digits[digit_count]);
-  }
 }
 
 static uint64_t pmm_align_down(uint64_t value) {
@@ -453,24 +415,24 @@ uint32_t pmm_get_free_frame_count(void) { return pmm_free_frames; }
 uint32_t pmm_get_used_frame_count(void) { return pmm_used_frames; }
 
 void pmm_print_summary(void) {
-  pmm_writestring(WIGOSX_STAGE_LABEL);
-  pmm_writestring(".\n");
+  klog_writestring(WIGOSX_STAGE_LABEL);
+  klog_writestring(".\n");
 
-  pmm_writestring("PMM frame size: ");
-  pmm_print_uint32(PMM_FRAME_SIZE);
-  pmm_writestring(" bytes\n");
+  klog_writestring("PMM frame size: ");
+  klog_write_uint32(PMM_FRAME_SIZE);
+  klog_writestring(" bytes\n");
 
-  pmm_writestring("Tracked frames: ");
-  pmm_print_uint32(pmm_total_frames);
-  pmm_putchar('\n');
+  klog_writestring("Tracked frames: ");
+  klog_write_uint32(pmm_total_frames);
+  klog_putchar('\n');
 
-  pmm_writestring("Free frames: ");
-  pmm_print_uint32(pmm_free_frames);
-  pmm_putchar('\n');
+  klog_writestring("Free frames: ");
+  klog_write_uint32(pmm_free_frames);
+  klog_putchar('\n');
 
-  pmm_writestring("Used/reserved frames: ");
-  pmm_print_uint32(pmm_used_frames);
-  pmm_putchar('\n');
+  klog_writestring("Used/reserved frames: ");
+  klog_write_uint32(pmm_used_frames);
+  klog_putchar('\n');
 }
 
 bool pmm_run_basic_self_test(void) {
