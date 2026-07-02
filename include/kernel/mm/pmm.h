@@ -1,5 +1,5 @@
-#ifndef KERNEL_CORE_PMM_H
-#define KERNEL_CORE_PMM_H
+#ifndef KERNEL_MM_PMM_H
+#define KERNEL_MM_PMM_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -67,4 +67,6 @@ uint32_t pmm_get_free_frame_count(void);
  */
 uint32_t pmm_get_used_frame_count(void);
 
-#endif /* KERNEL_CORE_PMM_H */
+bool pmm_run_basic_self_test(void);
+
+#endif /* KERNEL_MM_PMM_H */

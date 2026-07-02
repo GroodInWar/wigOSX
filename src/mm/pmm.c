@@ -1,9 +1,9 @@
 #include <kernel/boot/multiboot.h>
 #include <kernel/core/memory.h>
-#include <kernel/mm/pmm.h>
 #include <kernel/core/version.h>
 #include <kernel/drivers/serial.h>
 #include <kernel/drivers/vga.h>
+#include <kernel/mm/pmm.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -48,12 +48,38 @@ extern uint8_t _kernel_start;
 extern uint8_t _kernel_end;
 
 static uint32_t pmm_bitmap[PMM_BITMAP_WORD_COUNT];
+static uint32_t pmm_allocated_bitmap[PMM_BITMAP_WORD_COUNT];
 
 static bool pmm_initialized = false;
 static uint32_t pmm_total_frames = 0;
 static uint32_t pmm_free_frames = 0;
 static uint32_t pmm_used_frames = 0;
 static uint32_t pmm_next_search_frame = 0;
+
+static bool pmm_is_frame_allocated(uint32_t frame_index) {
+  uint32_t word_index = pmm_bitmap_word_index(frame_index);
+  uint32_t bit_mask = pmm_bitmap_bit_mask(frame_index);
+
+  return (pmm_allocated_bitmap[word_index] & bit_mask) != 0;
+}
+
+static void pmm_mark_frame_allocated(uint32_t frame_index) {
+  if (!pmm_is_valid_frame_index(frame_index)) {
+    return;
+  }
+
+  pmm_allocated_bitmap[pmm_bitmap_word_index(frame_index)] |=
+      pmm_bitmap_bit_mask(frame_index);
+}
+
+static void pmm_mark_frame_unallocated(uint32_t frame_index) {
+  if (!pmm_is_valid_frame_index(frame_index)) {
+    return;
+  }
+
+  pmm_allocated_bitmap[pmm_bitmap_word_index(frame_index)] &=
+      ~pmm_bitmap_bit_mask(frame_index);
+}
 
 static void pmm_putchar(char c) {
   terminal_putchar(c);
@@ -251,6 +277,7 @@ static uint64_t pmm_find_highest_physical_address(void) {
 static void pmm_reset_bitmap(void) {
   for (uint32_t i = 0; i < PMM_BITMAP_WORD_COUNT; i++) {
     pmm_bitmap[i] = 0xFFFFFFFFU;
+    pmm_allocated_bitmap[i] = 0;
   }
 }
 
@@ -354,6 +381,8 @@ bool pmm_allocate_frame(uint32_t* out_physical_address) {
        frame++) {
     if (!pmm_is_frame_index_used(frame)) {
       pmm_mark_frame_used(frame);
+      pmm_mark_frame_allocated(frame);
+
       *out_physical_address = frame * PMM_FRAME_SIZE;
       pmm_next_search_frame = frame + 1;
       return true;
@@ -363,6 +392,8 @@ bool pmm_allocate_frame(uint32_t* out_physical_address) {
   for (uint32_t frame = 0; frame < pmm_next_search_frame; frame++) {
     if (!pmm_is_frame_index_used(frame)) {
       pmm_mark_frame_used(frame);
+      pmm_mark_frame_allocated(frame);
+
       *out_physical_address = frame * PMM_FRAME_SIZE;
       pmm_next_search_frame = frame + 1;
       return true;
@@ -387,6 +418,11 @@ bool pmm_free_frame(uint32_t physical_address) {
     return false;
   }
 
+  if (!pmm_is_frame_allocated(frame_index)) {
+    return false;
+  }
+
+  pmm_mark_frame_unallocated(frame_index);
   pmm_mark_frame_free(frame_index);
 
   if (frame_index < pmm_next_search_frame) {
@@ -431,4 +467,40 @@ void pmm_print_summary(void) {
   pmm_writestring("Used/reserved frames: ");
   pmm_print_uint32(pmm_used_frames);
   pmm_putchar('\n');
+}
+
+bool pmm_run_basic_self_test(void) {
+  uint32_t free_before = pmm_get_free_frame_count();
+  uint32_t used_before = pmm_get_used_frame_count();
+  uint32_t physical_address = 0;
+
+  if (!pmm_allocate_frame(&physical_address)) {
+    return false;
+  }
+
+  if (!pmm_is_frame_used(physical_address)) {
+    return false;
+  }
+
+  if (pmm_get_free_frame_count() != free_before - 1) {
+    return false;
+  }
+
+  if (pmm_get_used_frame_count() != used_before + 1) {
+    return false;
+  }
+
+  if (!pmm_free_frame(physical_address)) {
+    return false;
+  }
+
+  if (pmm_get_free_frame_count() != free_before) {
+    return false;
+  }
+
+  if (pmm_get_used_frame_count() != used_before) {
+    return false;
+  }
+
+  return true;
 }

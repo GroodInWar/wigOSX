@@ -16,8 +16,10 @@ inputs, and generated artifacts are easy to tell apart.
 ├── boot/                 # Multiboot entry assembly and GRUB config
 ├── include/kernel/       # Public kernel headers
 │   ├── arch/i386/        # i386 CPU, GDT, IDT, I/O, and PIC headers
+│   ├── boot/             # Boot protocol structures
 │   ├── core/             # Generic kernel interfaces
-│   └── drivers/          # Driver interfaces
+│   ├── drivers/          # Driver interfaces
+│   └── mm/               # Memory-management interfaces
 ├── linker/               # Linker scripts
 ├── src/
 │   ├── arch/i386/        # i386-specific implementation code
@@ -26,7 +28,8 @@ inputs, and generated artifacts are easy to tell apart.
 │   │   ├── interrupts/
 │   │   └── memory/
 │   ├── drivers/          # Device drivers
-│   └── kernel/           # Generic kernel entry and tests
+│   ├── kernel/           # Generic kernel entry and tests
+│   └── mm/               # Generic memory-management implementation
 └── build/                # Generated objects, ISO staging, kernel binary, and ISO
 ```
 
@@ -87,9 +90,13 @@ help
 version
 ticks
 mem
+pmm
+pmmtest
 about
 scroll
 ```
-`version`  -> wigOSX 0.012 \
-`about`    -> Stage 12: Normalized kernel memory map. \
+`version`  -> wigOSX 0.013.1
+`about`    -> Stage 13.1: PMM cleanup and safety validation.
 `mem`      -> Prints usable/reserved regions and total usable/reserved memory.
+`pmm`      -> Prints physical frame counts.
+`pmmtest`  -> Runs a basic allocate/free PMM test.
