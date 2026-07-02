@@ -4,13 +4,14 @@
 #include <kernel/arch/i386/pic.h>
 #include <kernel/core/kernel.h>
 #include <kernel/core/memory.h>
-#include <kernel/mm/pmm.h>
 #include <kernel/core/shell.h>
 #include <kernel/core/test.h>
 #include <kernel/core/version.h>
 #include <kernel/drivers/pit.h>
 #include <kernel/drivers/serial.h>
 #include <kernel/drivers/vga.h>
+#include <kernel/mm/pmm.h>
+#include <kernel/mm/vmm.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -112,6 +113,21 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   terminal_writestring("GDT initialized successfully.\n");
   serial_writestring("[wigOSX] Stage 4: GDT initialized successfully.\n");
 
+  // VMM / Paging
+  terminal_writestring("Initializing identity paging...\n");
+  serial_writestring("[wigOSX] Stage 14: Initializing identity paging...\n");
+
+  vmm_initialize();
+  vmm_print_summary();
+
+  if (!vmm_is_enabled()) {
+    terminal_writestring("FATAL: paging did not enable.\n");
+    kernel_halt_forever();
+  }
+
+  terminal_writestring("Identity paging initialized successfully.\n");
+  serial_writestring("[wigOSX] Stage 14: Identity paging enabled.\n");
+  
   // IDT
   terminal_writestring("Initializing IDT...\n");
   serial_writestring("[wigOSX] Stage 5: Initializing IDT...\n");
@@ -173,7 +189,7 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   terminal_writestring(" enabled.\n");
   terminal_writestring("Starting kernel shell...\n");
 
-  // Shell 
+  // Shell
   shell_initialize();
 
   serial_writestring("[wigOSX] ");

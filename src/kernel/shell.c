@@ -5,6 +5,7 @@
 #include <kernel/drivers/serial.h>
 #include <kernel/drivers/vga.h>
 #include <kernel/mm/pmm.h>
+#include <kernel/mm/vmm.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -111,6 +112,7 @@ static void shell_command_help(void) {
   terminal_writestring("  pmm      - show physical memory manager summary\n");
   terminal_writestring(
       "  pmm_test - run a basic PMM allocation/free self-test\n");
+  terminal_writestring("  paging   - show virtual memory paging summary\n");
   terminal_writestring("  about    - describe the current stage\n");
   terminal_writestring("  scroll   - print lines to test terminal scrolling\n");
 }
@@ -182,6 +184,8 @@ static void shell_execute_command(const char* command) {
     } else {
       terminal_writestring("PMM self-test failed.\n");
     }
+  } else if (shell_strings_equal(command, "paging")) {
+    vmm_print_summary();
   } else if (shell_strings_equal(command, "about")) {
     shell_command_about();
   } else if (shell_strings_equal(command, "scroll")) {

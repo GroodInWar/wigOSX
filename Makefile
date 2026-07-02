@@ -61,6 +61,7 @@ OBJS = \
 	$(OBJ_DIR)/kernel/kernel.o \
 	$(OBJ_DIR)/kernel/memory.o \
 	$(OBJ_DIR)/mm/pmm.o \
+	$(OBJ_DIR)/mm/vmm.o \
 	$(OBJ_DIR)/kernel/shell.o \
 	$(OBJ_DIR)/drivers/vga.o \
 	$(OBJ_DIR)/drivers/serial.o \
@@ -71,6 +72,7 @@ OBJS = \
 	$(OBJ_DIR)/drivers/keyboard.o \
 	$(OBJ_DIR)/arch/i386/memory/gdt.o \
 	$(OBJ_DIR)/arch/i386/memory/gdt_flush.o \
+	$(OBJ_DIR)/arch/i386/memory/paging.o \
 	$(OBJ_DIR)/arch/i386/interrupts/idt.o \
 	$(OBJ_DIR)/arch/i386/interrupts/idt_flush.o \
 	$(OBJ_DIR)/arch/i386/interrupts/isr_stubs.o \

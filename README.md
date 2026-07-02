@@ -92,6 +92,7 @@ ticks
 mem
 pmm
 pmm_test
+paging
 about
 scroll
 ```
@@ -100,3 +101,4 @@ scroll
 `mem`      -> Prints usable/reserved regions and total usable/reserved memory.
 `pmm`      -> Prints physical frame counts.
 `pmm_test`  -> Runs a basic allocate/free PMM test.
+`paging`   -> Prints virtual memory paging status.
