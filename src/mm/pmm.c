@@ -56,6 +56,10 @@ static uint32_t pmm_free_frames = 0;
 static uint32_t pmm_used_frames = 0;
 static uint32_t pmm_next_search_frame = 0;
 
+static bool pmm_is_valid_frame_index(uint32_t frame_index);
+static uint32_t pmm_bitmap_word_index(uint32_t frame_index);
+static uint32_t pmm_bitmap_bit_mask(uint32_t frame_index);
+
 static bool pmm_is_frame_allocated(uint32_t frame_index) {
   uint32_t word_index = pmm_bitmap_word_index(frame_index);
   uint32_t bit_mask = pmm_bitmap_bit_mask(frame_index);

@@ -91,7 +91,7 @@ version
 ticks
 mem
 pmm
-pmmtest
+pmm_test
 about
 scroll
 ```
@@ -99,4 +99,4 @@ scroll
 `about`    -> Stage 13.1: PMM cleanup and safety validation.
 `mem`      -> Prints usable/reserved regions and total usable/reserved memory.
 `pmm`      -> Prints physical frame counts.
-`pmmtest`  -> Runs a basic allocate/free PMM test.
+`pmm_test`  -> Runs a basic allocate/free PMM test.
