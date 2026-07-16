@@ -47,7 +47,17 @@ ISO_BIN = $(ISO_BUILD_DIR)/wigOSX.iso
 GRUB_CFG = $(BOOT_DIR)/grub/grub.cfg
 
 ## @brief Compiler flags for freestanding kernel C sources.
-CFLAGS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INCLUDE_DIR)
+CFLAGS = \
+	-std=gnu99 \
+	-ffreestanding \
+	-O2 \
+	-Wall \
+	-Wextra \
+	-Werror \
+	-Wshadow \
+	-Wundef \
+	-Wstrict-prototypes \
+	-I$(INCLUDE_DIR)
 
 ## @brief Dependency-generation flags for C source files.
 DEPFLAGS = -MMD -MP
@@ -59,9 +69,14 @@ LDFLAGS = -T $(LINKER_SCRIPT) -ffreestanding -O2 -nostdlib
 OBJS = \
 	$(OBJ_DIR)/boot/multiboot.o \
 	$(OBJ_DIR)/kernel/kernel.o \
-	$(OBJ_DIR)/kernel/memory.o \
 	$(OBJ_DIR)/kernel/format.o \
+	$(OBJ_DIR)/kernel/console.o \
 	$(OBJ_DIR)/kernel/log.o \
+	$(OBJ_DIR)/kernel/panic.o \
+	$(OBJ_DIR)/kernel/interrupts.o \
+	$(OBJ_DIR)/kernel/input.o \
+	$(OBJ_DIR)/kernel/time.o \
+	$(OBJ_DIR)/kernel/memory.o \
 	$(OBJ_DIR)/mm/pmm.o \
 	$(OBJ_DIR)/mm/vmm.o \
 	$(OBJ_DIR)/kernel/shell.o \
@@ -85,6 +100,8 @@ DEPS = $(OBJS:.o=.d)
 
 ## @brief Default target that builds the bootable ISO image.
 all: $(ISO_BIN)
+
+.PHONY: all run clean check check-layers
 
 ## @brief Compiles generic kernel C sources.
 $(OBJ_DIR)/kernel/%.o: $(SRC_DIR)/kernel/%.c
@@ -152,6 +169,14 @@ $(ISO_BIN): $(KERNEL_BIN) $(GRUB_CFG)
 ## @brief Runs the kernel ISO in QEMU with serial output on stdio.
 run: $(ISO_BIN)
 	qemu-system-i386 -cdrom $(ISO_BIN) -serial stdio
+
+## @brief Runs static include checks that enforce kernel layering rules.
+check-layers:
+	sh tools/check_layers.sh
+
+## @brief Runs all available project checks.
+check: check-layers $(KERNEL_BIN)
+	@echo "wigOSX checks passed."
 
 ## @brief Removes generated build outputs.
 clean:

@@ -1,6 +1,7 @@
 #ifndef KERNEL_MM_PMM_H
 #define KERNEL_MM_PMM_H
 
+#include <kernel/core/status.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -21,7 +22,7 @@
  * @param multiboot_info_address Physical address of the Multiboot information
  * structure. Stage 13 uses this only to reserve bootloader-owned metadata.
  */
-void pmm_initialize(uint32_t multiboot_info_address);
+kernel_status_t pmm_initialize(uint32_t multiboot_info_address);
 
 /**
  * @brief Prints a readable PMM summary.
@@ -67,6 +68,12 @@ uint32_t pmm_get_free_frame_count(void);
  */
 uint32_t pmm_get_used_frame_count(void);
 
+/**
+ * @brief Runs a small allocation/free consistency check.
+ *
+ * @return true if one frame can be allocated, observed as used, freed, and the
+ * frame counters return to their original values.
+ */
 bool pmm_run_basic_self_test(void);
 
 #endif /* KERNEL_MM_PMM_H */

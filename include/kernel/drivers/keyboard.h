@@ -1,18 +1,20 @@
 #ifndef KERNEL_DRIVERS_KEYBOARD_H
 #define KERNEL_DRIVERS_KEYBOARD_H
 
+#include <stdbool.h>
+
 /**
  * @file keyboard.h
- * @brief Public interface for the PS/2 keyboard driver.
+ * @brief PS/2 keyboard driver interface.
  */
 
 /**
- * @brief Handles one PS/2 keyboard interrupt.
+ * Processes one PS/2 keyboard interrupt.
  *
- * This function is called from the generic IRQ handler when IRQ1 fires. It
- * reads the keyboard scancode from the PS/2 data port and processes the key
- * event.
+ * @param out_ascii Receives a translated character when one is available.
+ *
+ * @return true when a translated character was produced.
  */
-void keyboard_handle_interrupt(void);
+bool keyboard_handle_interrupt(char* out_ascii);
 
 #endif /* KERNEL_DRIVERS_KEYBOARD_H */

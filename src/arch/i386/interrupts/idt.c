@@ -1,9 +1,8 @@
 #include <kernel/arch/i386/idt.h>
 #include <kernel/arch/i386/pic.h>
-#include <kernel/drivers/keyboard.h>
-#include <kernel/drivers/pit.h>
-#include <kernel/drivers/serial.h>
-#include <kernel/drivers/vga.h>
+#include <kernel/core/interrupts.h>
+#include <kernel/core/log.h>
+#include <kernel/core/panic.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -282,21 +281,19 @@ void idt_initialize(void) {
  * @param frame Saved CPU state pushed by the common ISR stub.
  */
 void isr_handler(struct interrupt_frame* frame) {
-  /*
-   * Exception-specific diagnostics will eventually use frame. For now the
-   * halt path is intentionally simple and avoids returning to a bad context.
-   */
-  (void)frame;
-
-  terminal_setcolor(vga_entry_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK));
-  terminal_writestring("CPU exception caught.\n");
-
-  serial_writestring("[wigOSX] CPU exception caught.\n");
-  serial_writestring("[wigOSX] System halted.\n");
-
-  while (1) {
-    __asm__ volatile("cli; hlt");
+  if (frame == NULL) {
+    kernel_panic("CPU exception arrived without an interrupt frame");
   }
+
+  klog_writestring("Exception vector: ");
+  klog_write_uint32(frame->interrupt_number);
+  klog_putchar('\n');
+
+  klog_writestring("Exception error code: ");
+  klog_write_hex32(frame->error_code);
+  klog_putchar('\n');
+
+  kernel_panic("Unhandled CPU exception");
 }
 
 /**
@@ -305,17 +302,16 @@ void isr_handler(struct interrupt_frame* frame) {
  * @param frame Saved CPU state pushed by the IRQ common stub.
  */
 void irq_handler(struct interrupt_frame* frame) {
-  uint32_t irq = frame->interrupt_number - 32;
-
-  /*
-   * IRQ0 is the programmable interval timer.
-   * IRQ1 is the PS/2 keyboard.
-   */
-  if (irq == 0) {
-    pit_handle_interrupt();
-  } else if (irq == 1) {
-    keyboard_handle_interrupt();
+  if (frame == NULL) {
+    kernel_panic("Hardware interrupt arrived without an interrupt frame");
   }
 
-  pic_send_eoi((uint8_t)irq);
+  if (frame->interrupt_number < 32U || frame->interrupt_number > 47U) {
+    kernel_panic("Invalid hardware interrupt vector");
+  }
+
+  uint8_t irq = (uint8_t)(frame->interrupt_number - 32U);
+
+  interrupts_dispatch_irq(irq);
+  pic_send_eoi(irq);
 }

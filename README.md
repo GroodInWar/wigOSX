@@ -96,13 +96,14 @@ paging
 about
 scroll
 ```
-`version`  -> wigOSX 0.014.2
-`about`    -> Stage 14.2: Shared kernel formatting and logging foundation.
-`mem`      -> Prints usable/reserved regions and total usable/reserved memory.
-`pmm`      -> Prints physical frame counts.
+`version`   -> wigOSX 0.015
+`about`     -> Stage 15: Kernel boundary and failure-path hardening.
+`mem`       -> Prints usable/reserved regions and total usable/reserved memory.
+`pmm`       -> Prints physical frame counts.
 `pmm_test`  -> Runs a basic allocate/free PMM test.
-`paging`   -> Prints virtual memory paging status.
+`paging`    -> Prints virtual memory paging status.
 
-> Stage 14.2 introduces shared kernel formatting and logging helpers. PMM and VMM
-summary output now routes through the core logging layer instead of directly
-calling VGA and serial drivers.
+> Stage 15 introduces explicit console, logging, panic, input, time, and
+> interrupt-dispatch boundaries. Device drivers no longer invoke the shell
+> directly, and translated keyboard input is no longer copied into diagnostic
+> serial logs.

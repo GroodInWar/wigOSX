@@ -55,10 +55,16 @@ static uint32_t pmm_free_frames = 0;
 static uint32_t pmm_used_frames = 0;
 static uint32_t pmm_next_search_frame = 0;
 
+/**
+ * @brief Internal bitmap helpers used before their definitions below.
+ */
 static bool pmm_is_valid_frame_index(uint32_t frame_index);
 static uint32_t pmm_bitmap_word_index(uint32_t frame_index);
 static uint32_t pmm_bitmap_bit_mask(uint32_t frame_index);
 
+/**
+ * @brief Reports whether a frame was handed out by pmm_allocate_frame().
+ */
 static bool pmm_is_frame_allocated(uint32_t frame_index) {
   uint32_t word_index = pmm_bitmap_word_index(frame_index);
   uint32_t bit_mask = pmm_bitmap_bit_mask(frame_index);
@@ -66,6 +72,9 @@ static bool pmm_is_frame_allocated(uint32_t frame_index) {
   return (pmm_allocated_bitmap[word_index] & bit_mask) != 0;
 }
 
+/**
+ * @brief Marks a frame as allocator-owned in the allocation bitmap.
+ */
 static void pmm_mark_frame_allocated(uint32_t frame_index) {
   if (!pmm_is_valid_frame_index(frame_index)) {
     return;
@@ -75,6 +84,9 @@ static void pmm_mark_frame_allocated(uint32_t frame_index) {
       pmm_bitmap_bit_mask(frame_index);
 }
 
+/**
+ * @brief Clears allocator ownership for a frame in the allocation bitmap.
+ */
 static void pmm_mark_frame_unallocated(uint32_t frame_index) {
   if (!pmm_is_valid_frame_index(frame_index)) {
     return;
@@ -84,10 +96,16 @@ static void pmm_mark_frame_unallocated(uint32_t frame_index) {
       ~pmm_bitmap_bit_mask(frame_index);
 }
 
+/**
+ * @brief Rounds an address down to the nearest frame boundary.
+ */
 static uint64_t pmm_align_down(uint64_t value) {
   return value & ~(PMM_FRAME_SIZE_U64 - 1ULL);
 }
 
+/**
+ * @brief Rounds an address up to the next frame boundary.
+ */
 static uint64_t pmm_align_up(uint64_t value) {
   uint64_t mask = PMM_FRAME_SIZE_U64 - 1ULL;
 
@@ -102,6 +120,9 @@ static uint64_t pmm_align_up(uint64_t value) {
   return (value + mask) & ~mask;
 }
 
+/**
+ * @brief Computes the exclusive end address of a physical range.
+ */
 static uint64_t pmm_range_end(uint64_t base_address, uint64_t length) {
   if (base_address > UINT64_MAX - length) {
     return UINT64_MAX;
@@ -110,18 +131,30 @@ static uint64_t pmm_range_end(uint64_t base_address, uint64_t length) {
   return base_address + length;
 }
 
+/**
+ * @brief Reports whether a frame index is within tracked physical memory.
+ */
 static bool pmm_is_valid_frame_index(uint32_t frame_index) {
   return frame_index < pmm_total_frames && frame_index < PMM_MAX_FRAMES;
 }
 
+/**
+ * @brief Returns the bitmap word containing a frame's bit.
+ */
 static uint32_t pmm_bitmap_word_index(uint32_t frame_index) {
   return frame_index / PMM_BITS_PER_WORD;
 }
 
+/**
+ * @brief Returns the bit mask for a frame inside its bitmap word.
+ */
 static uint32_t pmm_bitmap_bit_mask(uint32_t frame_index) {
   return 1U << (frame_index % PMM_BITS_PER_WORD);
 }
 
+/**
+ * @brief Reports whether a frame is marked used or reserved.
+ */
 static bool pmm_is_frame_index_used(uint32_t frame_index) {
   uint32_t word_index = pmm_bitmap_word_index(frame_index);
   uint32_t bit_mask = pmm_bitmap_bit_mask(frame_index);
@@ -129,6 +162,9 @@ static bool pmm_is_frame_index_used(uint32_t frame_index) {
   return (pmm_bitmap[word_index] & bit_mask) != 0;
 }
 
+/**
+ * @brief Marks a tracked frame as used and updates frame counters.
+ */
 static void pmm_mark_frame_used(uint32_t frame_index) {
   if (!pmm_is_valid_frame_index(frame_index)) {
     return;
@@ -148,6 +184,9 @@ static void pmm_mark_frame_used(uint32_t frame_index) {
   pmm_used_frames++;
 }
 
+/**
+ * @brief Marks a tracked frame as free and updates frame counters.
+ */
 static void pmm_mark_frame_free(uint32_t frame_index) {
   if (!pmm_is_valid_frame_index(frame_index)) {
     return;
@@ -215,6 +254,9 @@ static void pmm_mark_range_used(uint64_t base_address, uint64_t length) {
   }
 }
 
+/**
+ * @brief Finds the highest physical address described by the memory map.
+ */
 static uint64_t pmm_find_highest_physical_address(void) {
   uint64_t highest_address = 0;
   uint32_t region_count = memory_get_region_count();
@@ -240,6 +282,9 @@ static uint64_t pmm_find_highest_physical_address(void) {
   return pmm_align_up(highest_address);
 }
 
+/**
+ * @brief Resets usage and allocation bitmaps to all-used/no-allocations.
+ */
 static void pmm_reset_bitmap(void) {
   for (uint32_t i = 0; i < PMM_BITMAP_WORD_COUNT; i++) {
     pmm_bitmap[i] = 0xFFFFFFFFU;
@@ -247,6 +292,9 @@ static void pmm_reset_bitmap(void) {
   }
 }
 
+/**
+ * @brief Frees all usable memory ranges from the normalized memory map.
+ */
 static void pmm_release_usable_memory_regions(void) {
   uint32_t region_count = memory_get_region_count();
 
@@ -265,10 +313,16 @@ static void pmm_release_usable_memory_regions(void) {
   }
 }
 
+/**
+ * @brief Reserves the first megabyte for BIOS, boot, and legacy hardware use.
+ */
 static void pmm_reserve_low_memory(void) {
   pmm_mark_range_used(0, PMM_LOW_MEMORY_RESERVED_BYTES);
 }
 
+/**
+ * @brief Reserves the linked kernel image in physical memory.
+ */
 static void pmm_reserve_kernel_image(void) {
   uintptr_t kernel_start = (uintptr_t)&_kernel_start;
   uintptr_t kernel_end = (uintptr_t)&_kernel_end;
@@ -281,14 +335,23 @@ static void pmm_reserve_kernel_image(void) {
                       (uint64_t)(kernel_end - kernel_start));
 }
 
+/**
+ * @brief Reserves the static PMM bitmap storage itself.
+ */
 static void pmm_reserve_bitmap_storage(void) {
-  uintptr_t bitmap_start = (uintptr_t)pmm_bitmap;
-  uintptr_t bitmap_end = bitmap_start + sizeof(pmm_bitmap);
+  uintptr_t usage_bitmap_start = (uintptr_t)pmm_bitmap;
+  uintptr_t allocation_bitmap_start = (uintptr_t)pmm_allocated_bitmap;
 
-  pmm_mark_range_used((uint64_t)bitmap_start,
-                      (uint64_t)(bitmap_end - bitmap_start));
+  pmm_mark_range_used((uint64_t)usage_bitmap_start,
+                      (uint64_t)sizeof(pmm_bitmap));
+
+  pmm_mark_range_used((uint64_t)allocation_bitmap_start,
+                      (uint64_t)sizeof(pmm_allocated_bitmap));
 }
 
+/**
+ * @brief Reserves Multiboot metadata that the bootloader placed in memory.
+ */
 static void pmm_reserve_multiboot_information(uint32_t multiboot_info_address) {
   if (multiboot_info_address == 0) {
     return;
@@ -305,39 +368,59 @@ static void pmm_reserve_multiboot_information(uint32_t multiboot_info_address) {
   }
 }
 
-void pmm_initialize(uint32_t multiboot_info_address) {
+/**
+ * @brief Initializes bitmap-backed physical frame tracking.
+ */
+kernel_status_t pmm_initialize(uint32_t multiboot_info_address) {
   pmm_initialized = false;
   pmm_total_frames = 0;
   pmm_free_frames = 0;
   pmm_used_frames = 0;
   pmm_next_search_frame = 0;
 
+  if (multiboot_info_address == 0) {
+    return KERNEL_STATUS_INVALID_ARGUMENT;
+  }
+
+  if (!memory_is_initialized() || memory_was_map_truncated()) {
+    return KERNEL_STATUS_NOT_READY;
+  }
+
   pmm_reset_bitmap();
 
   uint64_t highest_address = pmm_find_highest_physical_address();
 
+  if (highest_address == 0) {
+    return KERNEL_STATUS_UNAVAILABLE;
+  }
+
   pmm_total_frames = (uint32_t)(highest_address / PMM_FRAME_SIZE_U64);
+
+  if (pmm_total_frames == 0) {
+    return KERNEL_STATUS_UNAVAILABLE;
+  }
+
   pmm_used_frames = pmm_total_frames;
   pmm_free_frames = 0;
 
   pmm_release_usable_memory_regions();
 
-  /*
-   * Re-reserve unsafe areas after freeing usable RAM.
-   *
-   * This makes the initialization order easy to understand:
-   * 1. Everything starts reserved.
-   * 2. Usable memory-map regions become free.
-   * 3. Kernel/bootloader-owned areas become reserved again.
-   */
   pmm_reserve_low_memory();
   pmm_reserve_kernel_image();
   pmm_reserve_bitmap_storage();
   pmm_reserve_multiboot_information(multiboot_info_address);
 
+  if (pmm_free_frames == 0) {
+    return KERNEL_STATUS_OUT_OF_MEMORY;
+  }
+
   pmm_initialized = true;
+  return KERNEL_STATUS_OK;
 }
 
+/**
+ * @brief Allocates one free physical frame.
+ */
 bool pmm_allocate_frame(uint32_t* out_physical_address) {
   if (!pmm_initialized || out_physical_address == NULL) {
     return false;
@@ -369,6 +452,9 @@ bool pmm_allocate_frame(uint32_t* out_physical_address) {
   return false;
 }
 
+/**
+ * @brief Frees a previously allocated physical frame.
+ */
 bool pmm_free_frame(uint32_t physical_address) {
   if (!pmm_initialized) {
     return false;
@@ -398,6 +484,9 @@ bool pmm_free_frame(uint32_t physical_address) {
   return true;
 }
 
+/**
+ * @brief Reports whether the frame containing an address is used.
+ */
 bool pmm_is_frame_used(uint32_t physical_address) {
   uint32_t frame_index = physical_address / PMM_FRAME_SIZE;
 
@@ -408,12 +497,24 @@ bool pmm_is_frame_used(uint32_t physical_address) {
   return pmm_is_frame_index_used(frame_index);
 }
 
+/**
+ * @brief Returns the total number of tracked frames.
+ */
 uint32_t pmm_get_total_frame_count(void) { return pmm_total_frames; }
 
+/**
+ * @brief Returns the number of currently free frames.
+ */
 uint32_t pmm_get_free_frame_count(void) { return pmm_free_frames; }
 
+/**
+ * @brief Returns the number of currently used or reserved frames.
+ */
 uint32_t pmm_get_used_frame_count(void) { return pmm_used_frames; }
 
+/**
+ * @brief Prints a human-readable physical memory manager summary.
+ */
 void pmm_print_summary(void) {
   klog_writestring(WIGOSX_STAGE_LABEL);
   klog_writestring(".\n");
@@ -435,6 +536,9 @@ void pmm_print_summary(void) {
   klog_putchar('\n');
 }
 
+/**
+ * @brief Runs a basic allocate/free consistency test.
+ */
 bool pmm_run_basic_self_test(void) {
   uint32_t free_before = pmm_get_free_frame_count();
   uint32_t used_before = pmm_get_used_frame_count();

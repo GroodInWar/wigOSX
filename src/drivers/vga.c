@@ -93,6 +93,9 @@ static uint16_t vga_entry(unsigned char character, uint8_t color) {
   return (uint16_t)character | (uint16_t)color << 8;
 }
 
+/**
+ * @brief Combines foreground and background colors into one VGA color byte.
+ */
 uint8_t vga_entry_color(enum vga_color foreground, enum vga_color background) {
   return foreground | background << 4;
 }
@@ -125,6 +128,9 @@ static size_t terminal_strlen(const char* str) {
   return length;
 }
 
+/**
+ * @brief Clears the visible VGA screen and resets the cursor.
+ */
 void terminal_clear(void) {
   terminal_view_start = 0;
   terminal_set_hardware_view_start(terminal_view_start);
@@ -137,6 +143,9 @@ void terminal_clear(void) {
   terminal_column = 0;
 }
 
+/**
+ * @brief Initializes terminal state and clears the screen.
+ */
 void terminal_initialize(void) {
   terminal_row = 0;
   terminal_column = 0;
@@ -146,6 +155,9 @@ void terminal_initialize(void) {
   terminal_clear();
 }
 
+/**
+ * @brief Sets the encoded color used for later terminal output.
+ */
 void terminal_setcolor(uint8_t color) { terminal_color = color; }
 
 /**
@@ -213,6 +225,9 @@ static void terminal_backspace(void) {
  */
 static void terminal_form_feed(void) { terminal_clear(); }
 
+/**
+ * @brief Writes one character or supported control character to the terminal.
+ */
 void terminal_putchar(char c) {
   switch (c) {
     case '\n':
@@ -244,12 +259,18 @@ void terminal_putchar(char c) {
   }
 }
 
+/**
+ * @brief Writes a fixed-size byte range to the terminal.
+ */
 void terminal_write(const char* data, size_t size) {
   for (size_t i = 0; i < size; i++) {
     terminal_putchar(data[i]);
   }
 }
 
+/**
+ * @brief Writes a null-terminated string to the terminal.
+ */
 void terminal_writestring(const char* data) {
   terminal_write(data, terminal_strlen(data));
 }

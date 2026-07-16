@@ -78,6 +78,9 @@ void pic_mask_all(void) {
   outb(PIC_SLAVE_DATA, 0xFF);
 }
 
+/**
+ * @brief Enables delivery for one IRQ line on the PIC.
+ */
 bool pic_unmask_irq(uint8_t irq) {
   if (irq > 15) {
     return false;
@@ -107,6 +110,9 @@ bool pic_unmask_irq(uint8_t irq) {
   return true;
 }
 
+/**
+ * @brief Acknowledges a handled IRQ with End Of Interrupt commands.
+ */
 void pic_send_eoi(uint8_t irq) {
   if (irq > 15) {
     return;

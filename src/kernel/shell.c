@@ -1,10 +1,10 @@
+#include <kernel/core/console.h>
 #include <kernel/core/format.h>
+#include <kernel/core/log.h>
 #include <kernel/core/memory.h>
 #include <kernel/core/shell.h>
+#include <kernel/core/time.h>
 #include <kernel/core/version.h>
-#include <kernel/drivers/pit.h>
-#include <kernel/drivers/serial.h>
-#include <kernel/drivers/vga.h>
 #include <kernel/mm/pmm.h>
 #include <kernel/mm/vmm.h>
 #include <stdbool.h>
@@ -45,7 +45,7 @@ static size_t shell_buffer_length = 0;
 /**
  * @brief Prints the shell prompt.
  */
-static void shell_print_prompt(void) { terminal_writestring(SHELL_PROMPT); }
+static void shell_print_prompt(void) { console_writestring(SHELL_PROMPT); }
 
 /**
  * @brief Returns true when two null-terminated strings are equal.
@@ -83,7 +83,7 @@ static void shell_print_uint32(uint32_t value) {
   char buffer[11];
 
   if (kformat_uint32_decimal(value, buffer, sizeof(buffer))) {
-    terminal_writestring(buffer);
+    console_writestring(buffer);
   }
 }
 
@@ -91,48 +91,48 @@ static void shell_print_uint32(uint32_t value) {
  * @brief Implements the help command.
  */
 static void shell_command_help(void) {
-  terminal_writestring("wigOSX commands:\n");
-  terminal_writestring("  help     - show this help text\n");
-  terminal_writestring("  clear    - clear the screen\n");
-  terminal_writestring("  version  - show kernel version\n");
-  terminal_writestring("  ticks    - show PIT tick count\n");
-  terminal_writestring("  mem      - show detected memory summary\n");
-  terminal_writestring("  pmm      - show physical memory manager summary\n");
-  terminal_writestring(
+  console_writestring("wigOSX commands:\n");
+  console_writestring("  help     - show this help text\n");
+  console_writestring("  clear    - clear the screen\n");
+  console_writestring("  version  - show kernel version\n");
+  console_writestring("  ticks    - show PIT tick count\n");
+  console_writestring("  mem      - show detected memory summary\n");
+  console_writestring("  pmm      - show physical memory manager summary\n");
+  console_writestring(
       "  pmm_test - run a basic PMM allocation/free self-test\n");
-  terminal_writestring("  paging   - show paging and identity-map summary\n");
-  terminal_writestring("  about    - describe the current stage\n");
-  terminal_writestring("  scroll   - print lines to test terminal scrolling\n");
+  console_writestring("  paging   - show paging and identity-map summary\n");
+  console_writestring("  about    - describe the current stage\n");
+  console_writestring("  scroll   - print lines to test terminal scrolling\n");
 }
 
 /**
  * @brief Implements the version command.
  */
 static void shell_command_version(void) {
-  terminal_writestring("wigOSX ");
-  terminal_writestring(WIGOSX_VERSION_STRING);
-  terminal_putchar('\n');
+  console_writestring("wigOSX ");
+  console_writestring(WIGOSX_VERSION_STRING);
+  console_putchar('\n');
 }
 
 /**
  * @brief Implements the ticks command.
  */
 static void shell_command_ticks(void) {
-  terminal_writestring("PIT ticks since initialization: ");
-  shell_print_uint32(pit_get_ticks());
-  terminal_putchar('\n');
+  console_writestring("PIT ticks since initialization: ");
+  shell_print_uint32(ktime_get_ticks());
+  console_putchar('\n');
 }
 
 /**
  * @brief Implements the about command.
  */
 static void shell_command_about(void) {
-  terminal_writestring(WIGOSX_STAGE_LABEL);
-  terminal_writestring(".\n");
-  terminal_writestring(
-      "The kernel now enables identity paging through the VMM.\n");
-  terminal_writestring(
-      "The first 16 MiB are identity mapped for early kernel simplicity.\n");
+  console_writestring(WIGOSX_STAGE_LABEL);
+  console_writestring(".\n");
+  console_writestring(
+      "Kernel services now use explicit console, logging, panic, input, "
+      "and interrupt boundaries.\n");
+  console_writestring("Identity paging remains active for the first 16 MiB.\n");
 }
 
 /**
@@ -140,9 +140,9 @@ static void shell_command_about(void) {
  */
 static void shell_command_scrolltest(void) {
   for (uint32_t i = 0; i < 40; i++) {
-    terminal_writestring("scroll test line ");
+    console_writestring("scroll test line ");
     shell_print_uint32(i);
-    terminal_putchar('\n');
+    console_putchar('\n');
   }
 }
 
@@ -159,7 +159,7 @@ static void shell_execute_command(const char* command) {
   if (shell_strings_equal(command, "help")) {
     shell_command_help();
   } else if (shell_strings_equal(command, "clear")) {
-    terminal_clear();
+    console_clear();
   } else if (shell_strings_equal(command, "version")) {
     shell_command_version();
   } else if (shell_strings_equal(command, "ticks")) {
@@ -170,9 +170,9 @@ static void shell_execute_command(const char* command) {
     pmm_print_summary();
   } else if (shell_strings_equal(command, "pmm_test")) {
     if (pmm_run_basic_self_test()) {
-      terminal_writestring("PMM self-test passed.\n");
+      console_writestring("PMM self-test passed.\n");
     } else {
-      terminal_writestring("PMM self-test failed.\n");
+      console_writestring("PMM self-test failed.\n");
     }
   } else if (shell_strings_equal(command, "paging")) {
     vmm_print_summary();
@@ -181,10 +181,10 @@ static void shell_execute_command(const char* command) {
   } else if (shell_strings_equal(command, "scroll")) {
     shell_command_scrolltest();
   } else {
-    terminal_writestring("Unknown command: ");
-    terminal_writestring(command);
-    terminal_putchar('\n');
-    terminal_writestring("Type 'help' for available commands.\n");
+    console_writestring("Unknown command: ");
+    console_writestring(command);
+    console_putchar('\n');
+    console_writestring("Type 'help' for available commands.\n");
   }
 }
 
@@ -199,19 +199,24 @@ static void shell_reset_buffer(void) {
   shell_buffer_length = 0;
 }
 
+/**
+ * @brief Initializes shell input state and prints the first prompt.
+ */
 void shell_initialize(void) {
   shell_reset_buffer();
 
-  terminal_writestring("Stage 8 shell initialized.\n");
-  terminal_writestring("Type 'help' for commands.\n");
+  console_writestring(WIGOSX_STAGE_LABEL);
+  console_writestring(" shell ready.\n");
+  console_writestring("Type 'help' for commands.\n");
   shell_print_prompt();
-
-  serial_writestring("[wigOSX] Stage 8: shell initialized.\n");
 }
 
+/**
+ * @brief Handles one translated keyboard character as shell input.
+ */
 void shell_handle_character(char ascii) {
   if (ascii == '\n') {
-    terminal_putchar('\n');
+    console_putchar('\n');
 
     shell_buffer[shell_buffer_length] = '\0';
     shell_execute_command(shell_buffer);
@@ -224,7 +229,7 @@ void shell_handle_character(char ascii) {
     if (shell_buffer_length > 0) {
       shell_buffer_length--;
       shell_buffer[shell_buffer_length] = '\0';
-      terminal_putchar('\b');
+      console_putchar('\b');
     }
 
     return;
@@ -235,12 +240,13 @@ void shell_handle_character(char ascii) {
   }
 
   if (shell_buffer_length >= SHELL_BUFFER_SIZE - 1) {
-    serial_writestring("[wigOSX] Shell input buffer full.\n");
+    klog_writestring("\n[WARNING] Shell input buffer full.\n");
+    shell_print_prompt();
     return;
   }
 
   shell_buffer[shell_buffer_length] = ascii;
   shell_buffer_length++;
 
-  terminal_putchar(ascii);
+  console_putchar(ascii);
 }

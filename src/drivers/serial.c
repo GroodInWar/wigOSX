@@ -114,8 +114,14 @@ bool serial_initialize(void) {
   return true;
 }
 
+/**
+ * @brief Reports whether COM1 has been initialized successfully.
+ */
 bool serial_is_initialized(void) { return serial_initialized; }
 
+/**
+ * @brief Writes one character to COM1 when serial output is ready.
+ */
 void serial_putchar(char c) {
   if (!serial_initialized) {
     return;
@@ -138,12 +144,18 @@ void serial_putchar(char c) {
   outb(SERIAL_PORT_COM1, (uint8_t)c);
 }
 
+/**
+ * @brief Writes a fixed-size byte range to COM1.
+ */
 void serial_write(const char* data, size_t size) {
   for (size_t i = 0; i < size; i++) {
     serial_putchar(data[i]);
   }
 }
 
+/**
+ * @brief Writes a null-terminated string to COM1.
+ */
 void serial_writestring(const char* data) {
   serial_write(data, serial_strlen(data));
 }

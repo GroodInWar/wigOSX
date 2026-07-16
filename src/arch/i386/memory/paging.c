@@ -35,20 +35,32 @@ static uint32_t paging_tables[I386_PAGE_TABLE_COUNT]
 
 static bool paging_initialized = false;
 
+/**
+ * @brief Reads the CPU CR0 control register.
+ */
 static uint32_t i386_read_cr0(void) {
   uint32_t value = 0;
   __asm__ volatile("mov %%cr0, %0" : "=r"(value));
   return value;
 }
 
+/**
+ * @brief Writes the CPU CR0 control register.
+ */
 static void i386_write_cr0(uint32_t value) {
   __asm__ volatile("mov %0, %%cr0" : : "r"(value) : "memory");
 }
 
+/**
+ * @brief Writes the CPU CR3 page-directory base register.
+ */
 static void i386_write_cr3(uint32_t value) {
   __asm__ volatile("mov %0, %%cr3" : : "r"(value) : "memory");
 }
 
+/**
+ * @brief Clears all static page-directory and page-table entries.
+ */
 static void i386_paging_clear_tables(void) {
   for (uint32_t i = 0; i < I386_PAGE_DIRECTORY_ENTRY_COUNT; i++) {
     paging_directory[i] = 0;
@@ -61,6 +73,9 @@ static void i386_paging_clear_tables(void) {
   }
 }
 
+/**
+ * @brief Builds a writable identity map for the configured low memory range.
+ */
 static void i386_paging_build_identity_map(void) {
   for (uint32_t table = 0; table < I386_PAGE_TABLE_COUNT; table++) {
     for (uint32_t page = 0; page < I386_PAGE_TABLE_ENTRY_COUNT; page++) {
@@ -75,6 +90,9 @@ static void i386_paging_build_identity_map(void) {
   }
 }
 
+/**
+ * @brief Installs the static identity map and enables paging.
+ */
 void i386_paging_initialize_identity(void) {
   i386_paging_clear_tables();
   i386_paging_build_identity_map();
@@ -85,10 +103,16 @@ void i386_paging_initialize_identity(void) {
   paging_initialized = i386_paging_is_enabled();
 }
 
+/**
+ * @brief Reports whether CR0 has paging enabled.
+ */
 bool i386_paging_is_enabled(void) {
   return (i386_read_cr0() & I386_CR0_PAGING_ENABLE) != 0;
 }
 
+/**
+ * @brief Returns the configured identity-map size after initialization.
+ */
 uint32_t i386_paging_get_identity_mapped_bytes(void) {
   if (!paging_initialized) {
     return 0;

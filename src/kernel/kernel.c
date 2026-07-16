@@ -2,18 +2,19 @@
 #include <kernel/arch/i386/gdt.h>
 #include <kernel/arch/i386/idt.h>
 #include <kernel/arch/i386/pic.h>
+#include <kernel/core/console.h>
+#include <kernel/core/input.h>
+#include <kernel/core/interrupts.h>
 #include <kernel/core/kernel.h>
+#include <kernel/core/log.h>
 #include <kernel/core/memory.h>
+#include <kernel/core/panic.h>
 #include <kernel/core/shell.h>
-#include <kernel/core/test.h>
+#include <kernel/core/status.h>
 #include <kernel/core/version.h>
 #include <kernel/drivers/pit.h>
-#include <kernel/drivers/serial.h>
-#include <kernel/drivers/vga.h>
 #include <kernel/mm/pmm.h>
 #include <kernel/mm/vmm.h>
-#include <stdbool.h>
-#include <stddef.h>
 #include <stdint.h>
 
 /**
@@ -41,11 +42,11 @@
 #define MULTIBOOT_BOOTLOADER_MAGIC 0x2BADB002
 
 /**
- * @brief Halts the CPU forever after a fatal early-kernel error.
+ * @brief Panics if a subsystem initialization status is not successful.
  */
-static void kernel_halt_forever(void) {
-  while (1) {
-    cpu_halt();
+static void kernel_require(kernel_status_t status, const char* panic_message) {
+  if (!kernel_status_is_ok(status)) {
+    kernel_panic(panic_message);
   }
 }
 
@@ -57,146 +58,84 @@ static void kernel_halt_forever(void) {
  * starts the kernel shell.
  */
 void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
-  /* Bring up VGA first so every later initialization step can report status. */
-  terminal_initialize();
+  cpu_disable_interrupts();
+  console_initialize();
 
-  // Multiboot
-  terminal_writestring("Checking Multiboot information...\n");
   if (multiboot_magic != MULTIBOOT_BOOTLOADER_MAGIC) {
-    terminal_writestring("FATAL: invalid Multiboot magic.\n");
-    kernel_halt_forever();
+    kernel_panic("Invalid Multiboot bootloader magic");
   }
+
   if (multiboot_info_address == 0) {
-    terminal_writestring("FATAL: Multiboot info address is zero.\n");
-    kernel_halt_forever();
-  }
-  terminal_writestring("Multiboot information looks valid.\n");
-
-  // Serial Logging
-  terminal_writestring("Initializing serial logging...\n");
-  if (serial_initialize()) {
-    terminal_writestring("Serial logging initialized successfully.\n");
-    serial_writestring("[wigOSX] Stage 3: Serial logging initialized.\n");
-  } else {
-    terminal_writestring(
-        "Serial logging unavailable; continuing without serial.\n");
+    kernel_panic("Multiboot information address is zero");
   }
 
-  // Memory Map
-  terminal_writestring("Initializing memory map normalization...\n");
-  serial_writestring(
-      "[wigOSX] Stage 12: Initializing memory map normalization...\n");
+  kernel_status_t log_status = klog_initialize();
 
-  memory_initialize(multiboot_info_address);
+  if (log_status == KERNEL_STATUS_UNAVAILABLE) {
+    console_writestring(
+        "[WARNING] Serial logging unavailable; using VGA only.\n");
+  }
+
+  klog_writestring("wigOSX ");
+  klog_writestring(WIGOSX_VERSION_STRING);
+  klog_putchar('\n');
+
+  klog_writestring("Initializing normalized memory map...\n");
+  kernel_require(memory_initialize(multiboot_info_address),
+                 "Memory-map initialization failed");
   memory_print_summary();
 
-  terminal_writestring("Memory map normalized successfully.\n");
-  serial_writestring("[wigOSX] Stage 12: Memory map normalized.\n");
-
-  // PMM
-  terminal_writestring("Initializing physical memory manager...\n");
-  serial_writestring("[wigOSX] Stage 13: Initializing bitmap PMM...\n");
-
-  pmm_initialize(multiboot_info_address);
+  klog_writestring("Initializing physical memory manager...\n");
+  kernel_require(pmm_initialize(multiboot_info_address),
+                 "Physical memory manager initialization failed");
   pmm_print_summary();
 
-  terminal_writestring("Physical memory manager initialized successfully.\n");
-  serial_writestring("[wigOSX] Stage 13: Bitmap PMM initialized.\n");
-
-  // GDT
-  terminal_writestring("Initializing GDT...\n");
-  serial_writestring("[wigOSX] Stage 4: Initializing GDT...\n");
-
-  /* Load a kernel-owned flat GDT before installing interrupt descriptors. */
+  klog_writestring("Initializing GDT...\n");
   gdt_initialize();
 
-  terminal_writestring("GDT initialized successfully.\n");
-  serial_writestring("[wigOSX] Stage 4: GDT initialized successfully.\n");
-
-  // VMM / Paging
-  terminal_writestring("Initializing identity paging...\n");
-  serial_writestring("[wigOSX] Stage 14: Initializing identity paging...\n");
-
-  vmm_initialize();
+  klog_writestring("Initializing virtual memory manager...\n");
+  kernel_require(vmm_initialize(),
+                 "Virtual memory manager initialization failed");
   vmm_print_summary();
 
-  if (!vmm_is_enabled()) {
-    terminal_writestring("FATAL: paging did not enable.\n");
-    kernel_halt_forever();
-  }
-
-  terminal_writestring("Identity paging initialized successfully.\n");
-  serial_writestring("[wigOSX] Stage 14: Identity paging enabled.\n");
-  
-  // IDT
-  terminal_writestring("Initializing IDT...\n");
-  serial_writestring("[wigOSX] Stage 5: Initializing IDT...\n");
-
-  /* Install exception and IRQ gates, but keep maskable interrupts disabled. */
+  klog_writestring("Initializing interrupt services...\n");
+  interrupts_initialize();
   idt_initialize();
 
-  terminal_writestring("IDT initialized successfully.\n");
-  serial_writestring("[wigOSX] Stage 5: IDT initialized successfully.\n");
-
-  // PIC
-  terminal_writestring("Initializing PIC...\n");
-  serial_writestring("[wigOSX] Stage 6: Initializing PIC...\n");
-
-  /*
-   * Move hardware IRQs out of the CPU exception range, then enable:
-   * - IRQ0 for the PIT timer
-   * - IRQ1 for the PS/2 keyboard
-   */
   pic_remap();
   pic_mask_all();
+
+  if (!interrupts_register_irq(0, pit_handle_interrupt)) {
+    kernel_panic("Failed to register PIT IRQ handler");
+  }
+
+  if (!interrupts_register_irq(1, input_handle_keyboard_interrupt)) {
+    kernel_panic("Failed to register keyboard IRQ handler");
+  }
+
+  if (!pit_initialize(100)) {
+    kernel_panic("PIT initialization failed");
+  }
+
+  /*
+   * Initialize the character consumer before keyboard interrupts can arrive.
+   */
+  shell_initialize();
+
   if (!pic_unmask_irq(0)) {
-    terminal_writestring("FATAL: failed to unmask PIT IRQ0.\n");
-    kernel_halt_forever();
+    kernel_panic("Failed to unmask PIT IRQ0");
   }
 
   if (!pic_unmask_irq(1)) {
-    terminal_writestring("FATAL: failed to unmask keyboard IRQ1.\n");
-    kernel_halt_forever();
+    kernel_panic("Failed to unmask keyboard IRQ1");
   }
 
-  terminal_writestring("PIC initialized successfully.\n");
-  serial_writestring("[wigOSX] Stage 6: PIC initialized.\n");
-  serial_writestring("[wigOSX] Stage 7: IRQ1 enabled.\n");
-
-  // PIT
-  terminal_writestring("Initializing PIT...\n");
-  serial_writestring("[wigOSX] Stage 6: Initializing PIT at 100 Hz...\n");
-
-  /* Program the timer before allowing the PIC to deliver IRQ0 to the CPU. */
-  if (!pit_initialize(100)) {
-    terminal_writestring("FATAL: PIT initialization failed.\n");
-    kernel_halt_forever();
-  }
-  terminal_writestring("PIT initialized successfully.\n");
-  serial_writestring("[wigOSX] Stage 6: PIT initialized at 100 Hz.\n");
-
-  // CPU Interrupts
+  /*
+   * No initialization or output should occur after this point unless it is
+   * safe to run concurrently with interrupt handlers.
+   */
   cpu_enable_interrupts();
 
-  terminal_writestring("Hardware interrupts enabled.\n");
-  serial_writestring("[wigOSX] Interrupts enabled.\n");
-
-  terminal_writestring("Welcome to wigOSX ");
-  terminal_writestring(WIGOSX_VERSION_STRING);
-  terminal_writestring("!\n");
-
-  terminal_writestring(WIGOSX_STAGE_LABEL);
-  terminal_writestring(" enabled.\n");
-  terminal_writestring("Starting kernel shell...\n");
-
-  // Shell
-  shell_initialize();
-
-  serial_writestring("[wigOSX] ");
-  serial_writestring(WIGOSX_STAGE_LABEL);
-  serial_writestring(" enabled.\n");
-
-  /* Sleep until interrupts arrive instead of burning CPU in a spin loop. */
   while (1) {
     cpu_halt();
   }

@@ -1,6 +1,7 @@
 #ifndef KERNEL_CORE_MEMORY_H
 #define KERNEL_CORE_MEMORY_H
 
+#include <kernel/core/status.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -32,7 +33,14 @@ typedef struct {
  * @param multiboot_info_address Physical address of the Multiboot information
  * structure provided by the bootloader.
  */
-void memory_initialize(uint32_t multiboot_info_address);
+kernel_status_t memory_initialize(uint32_t multiboot_info_address);
+
+/**
+ * @brief Reports whether the normalized memory map was initialized.
+ *
+ * @return true after memory_initialize() succeeds.
+ */
+bool memory_is_initialized(void);
 
 /**
  * @brief Prints the detected and normalized memory map.

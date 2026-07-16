@@ -14,19 +14,37 @@
 
 static bool vmm_initialized = false;
 
-void vmm_initialize(void) {
+/**
+ * @brief Initializes the architecture paging layer and records VMM readiness.
+ */
+kernel_status_t vmm_initialize(void) {
   i386_paging_initialize_identity();
   vmm_initialized = i386_paging_is_enabled();
+
+  if (!vmm_initialized) {
+    return KERNEL_STATUS_HARDWARE_FAILURE;
+  }
+
+  return KERNEL_STATUS_OK;
 }
 
+/**
+ * @brief Reports whether the VMM initialized and paging remains enabled.
+ */
 bool vmm_is_enabled(void) {
   return vmm_initialized && i386_paging_is_enabled();
 }
 
+/**
+ * @brief Returns the identity-map size exposed by the architecture layer.
+ */
 uint32_t vmm_get_identity_mapped_bytes(void) {
   return i386_paging_get_identity_mapped_bytes();
 }
 
+/**
+ * @brief Prints virtual memory status and identity-map size.
+ */
 void vmm_print_summary(void) {
   klog_writestring("Virtual memory manager: ");
 

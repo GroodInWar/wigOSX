@@ -1,8 +1,7 @@
 #include <kernel/arch/i386/io.h>
-#include <kernel/core/shell.h>
 #include <kernel/drivers/keyboard.h>
-#include <kernel/drivers/serial.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 /**
@@ -63,46 +62,38 @@ static const char keyboard_shift_map[KEYBOARD_SCANCODE_TABLE_SIZE] = {
     [0x35] = '?', [0x39] = ' ',
 };
 
+/**
+ * @brief Reports whether a Set 1 scancode maps to an alphabetic key.
+ */
 static bool keyboard_is_letter_scancode(uint8_t scancode) {
   return (scancode >= 0x10 && scancode <= 0x19) ||
          (scancode >= 0x1E && scancode <= 0x26) ||
          (scancode >= 0x2C && scancode <= 0x32);
 }
 
-static void keyboard_log_ascii(char ascii) {
-  if (ascii == '\n') {
-    serial_writestring("[wigOSX] Keyboard: ENTER\n");
-  } else if (ascii == '\b') {
-    serial_writestring("[wigOSX] Keyboard: BACKSPACE\n");
-  } else if (ascii == '\t') {
-    serial_writestring("[wigOSX] Keyboard: TAB\n");
-  } else {
-    serial_writestring("[wigOSX] Keyboard: ");
-    serial_putchar(ascii);
-    serial_putchar('\n');
-  }
-}
-
+/**
+ * @brief Updates modifier state for a key-press scancode.
+ */
 static void keyboard_handle_modifier_press(uint8_t scancode) {
   if (scancode == SCANCODE_LEFT_SHIFT || scancode == SCANCODE_RIGHT_SHIFT) {
     keyboard_shift_pressed = true;
   } else if (scancode == SCANCODE_CAPS_LOCK) {
     keyboard_caps_lock_enabled = !keyboard_caps_lock_enabled;
-
-    if (keyboard_caps_lock_enabled) {
-      serial_writestring("[wigOSX] Keyboard: Caps Lock enabled\n");
-    } else {
-      serial_writestring("[wigOSX] Keyboard: Caps Lock disabled\n");
-    }
   }
 }
 
+/**
+ * @brief Updates modifier state for a key-release scancode.
+ */
 static void keyboard_handle_modifier_release(uint8_t scancode) {
   if (scancode == SCANCODE_LEFT_SHIFT || scancode == SCANCODE_RIGHT_SHIFT) {
     keyboard_shift_pressed = false;
   }
 }
 
+/**
+ * @brief Converts a Set 1 key-press scancode to ASCII using modifier state.
+ */
 static char keyboard_translate_scancode(uint8_t scancode) {
   if (scancode >= KEYBOARD_SCANCODE_TABLE_SIZE) {
     return '\0';
@@ -125,30 +116,38 @@ static char keyboard_translate_scancode(uint8_t scancode) {
   return keyboard_normal_map[scancode];
 }
 
-void keyboard_handle_interrupt(void) {
+/**
+ * @brief Reads and handles one keyboard interrupt from the PS/2 data port.
+ */
+bool keyboard_handle_interrupt(char* out_ascii) {
+  if (out_ascii == NULL) {
+    return false;
+  }
+
+  *out_ascii = '\0';
+
   uint8_t raw_scancode = inb(KEYBOARD_DATA_PORT);
   bool released = (raw_scancode & KEYBOARD_RELEASED_MASK) != 0;
   uint8_t scancode = raw_scancode & ~KEYBOARD_RELEASED_MASK;
 
   if (released) {
     keyboard_handle_modifier_release(scancode);
-    return;
+    return false;
   }
 
   keyboard_handle_modifier_press(scancode);
 
   if (scancode == SCANCODE_LEFT_SHIFT || scancode == SCANCODE_RIGHT_SHIFT ||
       scancode == SCANCODE_CAPS_LOCK) {
-    return;
+    return false;
   }
 
   char ascii = keyboard_translate_scancode(scancode);
 
   if (ascii == '\0') {
-    serial_writestring("[wigOSX] Keyboard: unsupported scancode\n");
-    return;
+    return false;
   }
 
-  shell_handle_character(ascii);
-  keyboard_log_ascii(ascii);
+  *out_ascii = ascii;
+  return true;
 }
