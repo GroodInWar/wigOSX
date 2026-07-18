@@ -17,6 +17,14 @@ void cpu_enable_interrupts(void);
 void cpu_disable_interrupts(void);
 
 /**
+ * @brief Atomically enables interrupts and halts until an interrupt arrives.
+ *
+ * This helper prevents an interrupt from arriving between an empty-work check
+ * and the HLT instruction. Call it while maskable interrupts are disabled.
+ */
+void cpu_enable_interrupts_and_halt(void);
+
+/**
  * @brief Halts the CPU until the next interrupt.
  *
  * If interrupts are enabled, execution resumes after an interrupt is

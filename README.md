@@ -89,6 +89,7 @@ Useful commands include:
 help
 version
 ticks
+input
 mem
 pmm
 pmm_test
@@ -98,12 +99,13 @@ scroll
 ```
 `version`   -> wigOSX 0.015
 `about`     -> Stage 15: Kernel boundary and failure-path hardening.
+`input`     -> Prints queued and dropped input character counts.
 `mem`       -> Prints usable/reserved regions and total usable/reserved memory.
 `pmm`       -> Prints physical frame counts.
 `pmm_test`  -> Runs a basic allocate/free PMM test.
 `paging`    -> Prints virtual memory paging status.
 
-> Stage 15 introduces explicit console, logging, panic, input, time, and
-> interrupt-dispatch boundaries. Device drivers no longer invoke the shell
-> directly, and translated keyboard input is no longer copied into diagnostic
-> serial logs.
+> Stage 15.1 introduces an interrupt-safe keyboard character queue. Keyboard
+> IRQ1 now performs only scancode handling and character enqueueing. The kernel
+> foreground loop dequeues characters and invokes the shell after the IRQ has
+> completed and the PIC has received its EOI.

@@ -100,6 +100,7 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
 
   klog_writestring("Initializing interrupt services...\n");
   interrupts_initialize();
+  input_initialize();
   idt_initialize();
 
   pic_remap();
@@ -137,6 +138,27 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   cpu_enable_interrupts();
 
   while (1) {
-    cpu_halt();
+    char ascii = '\0';
+
+    /*
+     * Disable interrupts while checking and removing one queue entry. This
+     * prevents the IRQ producer from modifying queue state during the dequeue.
+     */
+    cpu_disable_interrupts();
+
+    if (input_try_read_character(&ascii)) {
+      /*
+       * Shell work must run with interrupts enabled and outside IRQ context.
+       */
+      cpu_enable_interrupts();
+      shell_handle_character(ascii);
+      continue;
+    }
+
+    /*
+     * The queue is empty while interrupts are disabled. STI/HLT atomically
+     * re-enables interrupts and sleeps until new work arrives.
+     */
+    cpu_enable_interrupts_and_halt();
   }
 }

@@ -1,5 +1,6 @@
 #include <kernel/core/console.h>
 #include <kernel/core/format.h>
+#include <kernel/core/input.h>
 #include <kernel/core/log.h>
 #include <kernel/core/memory.h>
 #include <kernel/core/shell.h>
@@ -96,6 +97,7 @@ static void shell_command_help(void) {
   console_writestring("  clear    - clear the screen\n");
   console_writestring("  version  - show kernel version\n");
   console_writestring("  ticks    - show PIT tick count\n");
+  console_writestring("  input    - show queued and dropped input counts\n");
   console_writestring("  mem      - show detected memory summary\n");
   console_writestring("  pmm      - show physical memory manager summary\n");
   console_writestring(
@@ -136,6 +138,19 @@ static void shell_command_about(void) {
 }
 
 /**
+ * @brief Prints queued-input diagnostic counters.
+ */
+static void shell_command_input(void) {
+  console_writestring("Queued input characters: ");
+  shell_print_uint32(input_get_pending_character_count());
+  console_putchar('\n');
+
+  console_writestring("Dropped input characters: ");
+  shell_print_uint32(input_get_dropped_character_count());
+  console_putchar('\n');
+}
+
+/**
  * @brief Prints enough lines to test terminal scrolling.
  */
 static void shell_command_scrolltest(void) {
@@ -164,6 +179,8 @@ static void shell_execute_command(const char* command) {
     shell_command_version();
   } else if (shell_strings_equal(command, "ticks")) {
     shell_command_ticks();
+  } else if (shell_strings_equal(command, "input")) {
+    shell_command_input();
   } else if (shell_strings_equal(command, "mem")) {
     memory_print_summary();
   } else if (shell_strings_equal(command, "pmm")) {

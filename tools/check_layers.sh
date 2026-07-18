@@ -44,6 +44,11 @@ check_forbidden_include \
   '#include <kernel/drivers/' \
   "the shell must use kernel service interfaces instead of drivers"
 
+check_forbidden_include \
+  "src/kernel/input.c" \
+  '(shell_handle_character|#include <kernel/core/shell\.h>)' \
+  "the input IRQ adapter must queue characters instead of invoking the shell"
+
 if [ "$failed" -ne 0 ]; then
   exit 1
 fi
