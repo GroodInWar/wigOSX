@@ -49,6 +49,11 @@ check_forbidden_include \
   '(shell_handle_character|#include <kernel/core/shell\.h>)' \
   "the input IRQ adapter must queue characters instead of invoking the shell"
 
+check_forbidden_include \
+  "src/kernel/kernel.c" \
+  'input_try_read_character|shell_handle_character' \
+  "kernel_main must delegate foreground processing to the kernel work service"
+
 if [ "$failed" -ne 0 ]; then
   exit 1
 fi

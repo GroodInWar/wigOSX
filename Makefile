@@ -75,6 +75,7 @@ OBJS = \
 	$(OBJ_DIR)/kernel/panic.o \
 	$(OBJ_DIR)/kernel/interrupts.o \
 	$(OBJ_DIR)/kernel/input.o \
+	$(OBJ_DIR)/kernel/work.o \
 	$(OBJ_DIR)/kernel/time.o \
 	$(OBJ_DIR)/kernel/memory.o \
 	$(OBJ_DIR)/mm/pmm.o \
