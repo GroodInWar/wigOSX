@@ -312,6 +312,14 @@ void irq_handler(struct interrupt_frame* frame) {
 
   uint8_t irq = (uint8_t)(frame->interrupt_number - 32U);
 
+  if (!interrupts_context_enter()) {
+    kernel_panic("Hardware interrupt-context depth overflow");
+  }
+
   interrupts_dispatch_irq(irq);
   pic_send_eoi(irq);
+
+  if (!interrupts_context_exit()) {
+    kernel_panic("Hardware interrupt-context depth underflow");
+  }
 }

@@ -1,5 +1,7 @@
 #include <kernel/arch/i386/cpu.h>
 #include <kernel/core/input.h>
+#include <kernel/core/interrupts.h>
+#include <kernel/core/panic.h>
 #include <kernel/core/shell.h>
 #include <kernel/core/work.h>
 
@@ -10,6 +12,10 @@
 
 void kernel_work_run_once(void) {
   char ascii = '\0';
+
+  if (interrupts_is_in_context()) {
+    kernel_panic("Foreground work invoked from interrupt context");
+  }
 
   /*
    * Prevent the IRQ producer from changing queue state while foreground code

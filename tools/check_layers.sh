@@ -54,6 +54,16 @@ check_forbidden_include \
   'input_try_read_character|shell_handle_character' \
   "kernel_main must delegate foreground processing to the kernel work service"
 
+check_forbidden_include \
+  "src/kernel/interrupts.c" \
+  '#include <kernel/core/(console|log|shell)\.h>' \
+  "the generic IRQ dispatcher must record state without foreground output"
+
+check_forbidden_include \
+  "src/kernel/input.c" \
+  '(console_|klog_|shell_handle_character)' \
+  "the input IRQ path must not perform foreground output or shell work"
+
 if [ "$failed" -ne 0 ]; then
   exit 1
 fi
