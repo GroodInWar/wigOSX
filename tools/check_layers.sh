@@ -64,6 +64,16 @@ check_forbidden_include \
   '(console_|klog_|shell_handle_character)' \
   "the input IRQ path must not perform foreground output or shell work"
 
+check_forbidden_include \
+  "src/mm/pmm.c" \
+  '#include <kernel/mm/heap\.h>' \
+  "the PMM must not depend on the higher-level kernel heap"
+
+check_forbidden_include \
+  "src/mm/vmm.c" \
+  '#include <kernel/mm/heap\.h>' \
+  "the VMM must not depend on the higher-level kernel heap"
+
 if [ "$failed" -ne 0 ]; then
   exit 1
 fi

@@ -80,6 +80,7 @@ OBJS = \
 	$(OBJ_DIR)/kernel/memory.o \
 	$(OBJ_DIR)/mm/pmm.o \
 	$(OBJ_DIR)/mm/vmm.o \
+	$(OBJ_DIR)/mm/heap.o \
 	$(OBJ_DIR)/kernel/shell.o \
 	$(OBJ_DIR)/drivers/vga.o \
 	$(OBJ_DIR)/drivers/serial.o \
