@@ -52,7 +52,24 @@ SECTIONS
     *(.bss)
   }
 
+  /**
+    * Fixed initial kernel heap backing region.
+    *
+    * Stage 16.1 reserves this space inside the linked kernel image so it remains
+    * contiguous and is covered by the kernel's physical-memory reservation.
+    */
   . = ALIGN(4K);
+  _kernel_heap_start = .;
+
+  . += 256K;
+
+  . = ALIGN(4K);
+  _kernel_heap_end = .;
+
+  /**
+    * The heap is intentionally included before _kernel_end so the PMM treats it
+    * as kernel-owned memory rather than free physical memory.
+    */
   _kernel_end = .;
 
   /*

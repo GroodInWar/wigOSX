@@ -14,6 +14,7 @@
 #include <kernel/core/version.h>
 #include <kernel/core/work.h>
 #include <kernel/drivers/pit.h>
+#include <kernel/mm/heap.h>
 #include <kernel/mm/pmm.h>
 #include <kernel/mm/vmm.h>
 #include <stdint.h>
@@ -98,6 +99,10 @@ void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info_address) {
   kernel_require(vmm_initialize(),
                  "Virtual memory manager initialization failed");
   vmm_print_summary();
+
+  klog_writestring("Initializing kernel heap backing region...\n");
+  kernel_require(heap_initialize(),
+                 "Kernel heap backing-region initialization failed");
 
   klog_writestring("Initializing interrupt services...\n");
   interrupts_initialize();

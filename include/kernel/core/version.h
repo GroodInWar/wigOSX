@@ -10,10 +10,10 @@
  * across multiple files.
  */
 
-#define WIGOSX_VERSION_STRING "0.016.0"
+#define WIGOSX_VERSION_STRING "0.016.1"
 
-#define WIGOSX_STAGE_NUMBER_STRING "16.0"
-#define WIGOSX_STAGE_NAME "Kernel heap interface and ownership boundary"
+#define WIGOSX_STAGE_NUMBER_STRING "16.1"
+#define WIGOSX_STAGE_NAME "Initial kernel heap backing region"
 
 #define WIGOSX_STAGE_LABEL \
   "Stage " WIGOSX_STAGE_NUMBER_STRING ": " WIGOSX_STAGE_NAME

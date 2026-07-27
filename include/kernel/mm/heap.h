@@ -2,7 +2,9 @@
 #define KERNEL_MM_HEAP_H
 
 #include <kernel/core/status.h>
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 /**
  * @file heap.h
@@ -10,22 +12,44 @@
  *
  * The heap provides variable-sized allocations to kernel subsystems.
  *
- * This interface intentioanlly does not expose allocator metadata, physical
+ * This interface intentionally does not expose allocator metadata, physical
  * frames, page tables, or virtual-memory implementation details.
  */
 
 /**
- * @brief Intializes the kernel heap.
+ * @brief Initializes the kernel heap backing region.
  *
- * Heap initialization must complete before kmalloc or kfree() are used.
+ * Heap initialization must complete before kmalloc() or kfree() are used.
  *
- * @return KERNEL_STATUS_OK when the heap is ready, otherwise an appropriate
- * failure status.
+ * @return KERNEL_STATUS_OK when the heap backing region is valid, otherwise an
+ * appropriate failure status.
  */
 kernel_status_t heap_initialize(void);
 
 /**
+ * @brief Returns whether the kernel heap has been initialized.
+ */
+bool heap_is_initialized(void);
+
+/**
+ * @brief Returns the first address owned by the initial kernel heap.
+ */
+uintptr_t heap_get_start_address(void);
+
+/**
+ * @brief Returns the first address after the initial kernel heap.
+ */
+uintptr_t heap_get_end_address(void);
+
+/**
+ * @brief Returns the total number of bytes in the initial heap region.
+ */
+size_t heap_get_capacity(void);
+
+/**
  * @brief Allocates a variable-sized block of kernel memory.
+ *
+ * Stage 16.1 does not yet implement allocation.
  *
  * @param size Number of bytes requested.
  *
@@ -39,11 +63,8 @@ void* kmalloc(size_t size);
  *
  * Passing NULL performs no operation.
  *
- * Invalid allocations and allocator-corruption conditions may cause a kernel
- * panic rather than being silently ignored.
- *
  * @param pointer Previously allocated kernel-memory pointer, or NULL.
  */
 void kfree(void* pointer);
 
-#endif  // KERNEL_MM_HEAP_H
+#endif /* KERNEL_MM_HEAP_H */

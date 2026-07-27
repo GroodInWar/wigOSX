@@ -8,6 +8,7 @@
 #include <kernel/core/shell.h>
 #include <kernel/core/time.h>
 #include <kernel/core/version.h>
+#include <kernel/mm/heap.h>
 #include <kernel/mm/pmm.h>
 #include <kernel/mm/vmm.h>
 #include <stdbool.h>
@@ -107,6 +108,7 @@ static void shell_command_help(void) {
   console_writestring(
       "  pmm_test - run a basic PMM allocation/free self-test\n");
   console_writestring("  paging   - show paging and identity-map summary\n");
+  console_writestring("  heap     - show kernel heap backing-region summary\n");
   console_writestring("  about    - describe the current stage\n");
   console_writestring("  scroll   - print lines to test terminal scrolling\n");
 }
@@ -191,6 +193,20 @@ static void shell_command_irq(void) {
 }
 
 /**
+ * @brief Prints the kernel heap backing-region summary.
+ */
+static void shell_command_heap(void) {
+  console_writestring("Heap initialized: ");
+  console_writestring(heap_is_initialized() ? "yes\n" : "no\n");
+
+  console_writestring("Heap capacity bytes: ");
+  shell_print_uint32((uint32_t)heap_get_capacity());
+  console_putchar('\n');
+
+  console_writestring("Allocator available: no\n");
+}
+
+/**
  * @brief Executes one completed command line.
  *
  * @param command Null-terminated command string.
@@ -222,6 +238,8 @@ static void shell_execute_command(const char* command) {
     } else {
       console_writestring("PMM self-test failed.\n");
     }
+  } else if (shell_strings_equal(command, "heap")) {
+    shell_command_heap();
   } else if (shell_strings_equal(command, "paging")) {
     vmm_print_summary();
   } else if (shell_strings_equal(command, "about")) {
